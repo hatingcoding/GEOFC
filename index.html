@@ -1,0 +1,1018 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEO Visibility Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;900&family=Roboto+Mono:wght@400;500;600;700&display=swap">
+<style>
+  /* ============ TOKENS ============ */
+  :root{
+    --bg:#F4F6F9;
+    --panel:#FFFFFF;
+    --panel-2:#ECF0F5;
+    --border:#D8DEE7;
+    --text-hi:#161A22;
+    --text-lo:#57647A;
+    --accent:#A6690A;
+    --accent-soft:#F3E3C6;
+    --go:#1F8F6C;
+    --go-soft:#DCF1E9;
+    --gap:#C23B2E;
+    --gap-soft:#F7E1DE;
+    --slate:#6B7A94;
+    --slate-soft:#E4E9F0;
+    --shadow: 0 1px 2px rgba(22,26,34,.04), 0 8px 24px -12px rgba(22,26,34,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12151C;
+      --panel:#1B2029;
+      --panel-2:#232936;
+      --border:#2E3644;
+      --text-hi:#ECF0F6;
+      --text-lo:#96A2B8;
+      --accent:#F0A93E;
+      --accent-soft:#3A2E13;
+      --go:#4FD8A6;
+      --go-soft:#123528;
+      --gap:#FF6B57;
+      --gap-soft:#3A1A15;
+      --slate:#8B98B0;
+      --slate-soft:#242B38;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151C;
+    --panel:#1B2029;
+    --panel-2:#232936;
+    --border:#2E3644;
+    --text-hi:#ECF0F6;
+    --text-lo:#96A2B8;
+    --accent:#F0A93E;
+    --accent-soft:#3A2E13;
+    --go:#4FD8A6;
+    --go-soft:#123528;
+    --gap:#FF6B57;
+    --gap-soft:#3A1A15;
+    --slate:#8B98B0;
+    --slate-soft:#242B38;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text-hi);
+    font-family:"Roboto", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:1180px; min-width:0; margin:0 auto; padding:28px 20px 80px; }
+
+  .eyebrow{
+    font-family:"Roboto Mono", ui-monospace, monospace;
+    font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--text-lo);
+  }
+  .group-eyebrow{
+    font-family:"Roboto Mono", ui-monospace, monospace;
+    font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:12px;
+  }
+  h1,h2,h3{ text-wrap:balance; margin:0; }
+  .num{ font-variant-numeric:tabular-nums; font-family:"Roboto Mono", ui-monospace, monospace; }
+
+  a{ color:var(--accent); }
+
+  /* ============ HEADER ============ */
+  header.masthead{
+    margin-bottom:16px;
+  }
+  .masthead h1{
+    font-family:"Roboto", ui-sans-serif, sans-serif;
+    font-weight:900; font-size:clamp(24px,3.4vw,46px); line-height:1.02;
+    letter-spacing:.01em; margin:6px 0 8px; text-wrap:balance;
+  }
+  .masthead-row{
+    display:flex; flex-direction:column; gap:14px;
+    margin-top:16px;
+  }
+  .masthead .sub{
+    width:100%; box-sizing:border-box;
+    color:var(--text-lo); font-size:14.5px; margin:0; line-height:1.5; text-align:left;
+  }
+  .meta-block{
+    width:100%; box-sizing:border-box;
+    display:flex; flex-direction:row; flex-wrap:wrap; gap:8px 28px; align-items:center; text-align:left;
+  }
+  .meta-row{ display:flex; gap:8px; justify-content:flex-start; font-family:"Roboto Mono",monospace; font-size:12px; color:var(--text-lo); }
+  .meta-row b{ color:var(--text-hi); font-weight:600; }
+
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:"Roboto Mono",monospace; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+    padding:5px 10px; border-radius:100px; border:1px solid transparent; white-space:nowrap;
+  }
+  .pill.warn{ background:var(--accent-soft); color:var(--accent); border-color:color-mix(in srgb, var(--accent) 35%, transparent); }
+  .pill.go{ background:var(--go-soft); color:var(--go); }
+  .pill.gap{ background:var(--gap-soft); color:var(--gap); }
+  .pill.slate{ background:var(--slate-soft); color:var(--slate); }
+  .pill .dot{ width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+  /* ============ PROVENANCE BANNER ============ */
+  .banner{
+    display:flex; gap:14px; align-items:flex-start;
+    background:var(--panel); border:1px solid var(--border); border-left:4px solid var(--accent);
+    border-radius:10px; padding:16px 18px; box-shadow:var(--shadow);
+  }
+  .banner .icon{ font-family:"Roboto Mono",monospace; font-weight:700; color:var(--accent); font-size:13px; padding-top:1px;}
+  .banner p{ margin:0; font-size:14px; line-height:1.55; color:var(--text-hi); }
+  .banner p + p{ margin-top:6px; color:var(--text-lo); font-size:13.5px; }
+  .banner b{ color:var(--accent); }
+
+  /* ============ SECTION LABELS ============ */
+  section{ margin-bottom:44px; }
+  .section-head{ display:flex; justify-content:space-between; align-items:baseline; gap:16px; margin-bottom:16px; flex-wrap:wrap;}
+  .section-head h2{
+    font-family:"Roboto", sans-serif; font-weight:700; font-size:24px; letter-spacing:.01em;
+  }
+  .section-head .hint{ color:var(--text-lo); font-size:13px; }
+  .section-group-start{ margin-top:56px; padding-top:36px; }
+
+  /* ============ BOARD (headline rows) ============ */
+  .board{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow);
+  }
+  .board-row{
+    display:grid; grid-template-columns:1.5fr .9fr 1.7fr; gap:20px; align-items:center;
+    padding:20px 22px; border-bottom:1px solid var(--border);
+  }
+  .board-row:last-child{ border-bottom:none; }
+  .board-row .v-name{ font-family:"Roboto Mono",monospace; font-weight:700; font-size:14.5px; }
+  .board-row .v-sub{ color:var(--text-lo); font-size:12.5px; margin-top:4px; line-height:1.4; }
+  .board-row .v-rate{ font-size:clamp(30px,3.6vw,42px); font-weight:700; line-height:1; color:var(--accent); text-align:right; }
+  .board-row .v-rate small{ font-size:14px; font-weight:600; color:var(--text-lo); margin-left:2px; }
+  .board-row .v-detail{ font-size:13px; color:var(--text-lo); line-height:1.55; }
+  .board-row .v-detail .k{ color:var(--text-hi); font-weight:600; }
+  @media (max-width:720px){ .board-row{ grid-template-columns:1fr; text-align:left;} .board-row .v-rate{text-align:left;} }
+
+  /* ============ SIGNAL CALLOUT ============ */
+  .signal-card{
+    display:flex; gap:20px; align-items:center; margin-top:14px;
+    background:var(--go-soft); border:1px solid color-mix(in srgb, var(--go) 35%, transparent);
+    border-radius:12px; padding:18px 22px;
+  }
+  .signal-num{ font-size:44px; font-weight:700; color:var(--go); line-height:1; flex-shrink:0; }
+  .signal-num small{ font-size:18px; font-weight:600; margin-left:2px; }
+  .signal-title{ font-weight:700; font-size:14px; margin-bottom:4px; }
+  .signal-body p{ margin:0; font-size:13px; line-height:1.55; color:var(--text-hi); }
+  .signal-body p b{ color:var(--go); }
+  @media (max-width:640px){ .signal-card{ flex-direction:column; align-items:flex-start; } }
+
+  /* ============ CARD GRID ============ */
+  .grid2{ display:grid; grid-template-columns:1.15fr .85fr; gap:20px; }
+  @media (max-width:860px){ .grid2{ grid-template-columns:1fr; } }
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px 22px; box-shadow:var(--shadow);
+  }
+  .card h3{ font-size:14px; font-weight:600; margin-bottom:2px; }
+  .card .card-hint{ color:var(--text-lo); font-size:12.5px; margin-bottom:16px; }
+
+  /* stage comparison chart */
+  .stage-chart{ display:flex; gap:18px; align-items:flex-end; height:190px; padding:0 4px; position:relative; }
+  .stage-chart::before{
+    content:""; position:absolute; left:0; right:0; bottom:32px; border-top:1px dashed var(--border);
+  }
+  .stage-col{ flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; gap:8px;}
+  .bars{ display:flex; gap:5px; align-items:flex-end; height:132px; }
+  .bar{ width:15px; border-radius:3px 3px 0 0; position:relative; transition:height .8s cubic-bezier(.2,.8,.2,1); }
+  .bar.baseline{ background:var(--slate); }
+  .bar.injected{ background:var(--accent); }
+  .bar .val{
+    position:absolute; top:-18px; left:50%; transform:translateX(-50%);
+    font-family:"Roboto Mono",monospace; font-size:10px; color:var(--text-lo); white-space:nowrap;
+  }
+  .stage-label{ font-family:"Roboto Mono",monospace; font-size:11px; color:var(--text-lo); text-align:center; }
+  .legend{ display:flex; gap:16px; margin-top:14px; font-family:"Roboto Mono",monospace; font-size:11.5px; color:var(--text-lo); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend i{ width:10px; height:10px; border-radius:2px; display:inline-block; }
+
+  /* horizontal bars (competitors) */
+  .hbar-row{ display:grid; grid-template-columns:110px 1fr 40px; align-items:center; gap:10px; margin-bottom:12px; }
+  .hbar-row:last-child{ margin-bottom:0; }
+  .hbar-label{ font-size:12.5px; font-weight:500; }
+  .hbar-label.fc{ color:var(--accent); font-weight:700; }
+  .hbar-track{ background:var(--panel-2); border-radius:5px; height:14px; overflow:hidden; }
+  .hbar-fill{ height:100%; border-radius:5px; background:var(--slate); width:0; transition:width 1s cubic-bezier(.2,.8,.2,1); }
+  .hbar-fill.fc{ background:var(--accent); }
+  .hbar-val{ font-family:"Roboto Mono",monospace; font-size:12px; text-align:right; color:var(--text-lo); }
+
+  .sig-note{
+    display:flex; gap:12px; align-items:flex-start; background:var(--accent-soft); border-radius:8px;
+    padding:12px 14px; margin-bottom:24px; font-size:12.5px; line-height:1.55; color:var(--text-hi);
+  }
+  .sig-note b{ color:var(--accent); }
+
+  /* comparison table — per-run results side by side, consistency-first.
+     .cmp-table is ONE real grid; every .cmp-row is display:contents so its cells become
+     direct grid items sharing the same column tracks — this is what keeps column widths
+     identical across every row (previously each row was its own independent grid, so a
+     row with longer cell text — e.g. the reference row's "ref · 38% incl. Book" — could
+     stretch its own columns wider than the rows below it). display:contents still keeps
+     .cmp-row in the DOM for selector purposes (.cmp-row.winner > * etc. below), it just
+     stops it from generating its own box. */
+  .cmp-table-wrap{ overflow-x:auto; }
+  .cmp-table{
+    display:grid;
+    /* percentage tracks wrapped in minmax(0, …) so a column's width is always that exact
+       share of the table — content can no longer force one column wider than another
+       (which is also what was making row heights uneven: a wider column let its text sit
+       on fewer lines than the same text squeezed into a same-column-but-different-row). */
+    grid-template-columns: minmax(0,20%) minmax(0,16%) minmax(0,16%) minmax(0,16%) minmax(0,16%) minmax(0,16%);
+    row-gap:2px; column-gap:0; align-items:stretch; min-width:800px;
+  }
+  .cmp-row{ display:contents; }
+  .cmp-row.head > div{
+    font-family:"Roboto Mono",monospace; font-size:10.5px; color:var(--text-lo); text-transform:uppercase;
+    letter-spacing:.05em; padding:0 10px 8px; border-bottom:1px solid var(--border); text-align:center; display:flex; flex-direction:column; justify-content:center;
+  }
+  .cmp-row.head > div.sortable{ cursor:pointer; user-select:none; }
+  .cmp-row.head > div.sortable:hover{ color:var(--text-hi); }
+  .cmp-row.head > div.sortable:hover .sort-arrow{ opacity:.9; }
+  .cmp-row.head > div.sortable.active{ color:var(--accent); }
+  .sort-arrow{ display:inline-block; margin-left:4px; opacity:.4; font-size:16px; }
+  .sort-arrow.active{ opacity:1; }
+  /* Fixed row height: every data-row cell gets the same min-height and centers its own
+     content, so rows no longer vary in height depending on whether their text happened
+     to wrap onto one line or two. */
+  /* Scoped to :not(.head) — the header row's Consistency cell also carries the
+     .cmp-consistency class (for its right-alignment), so an unscoped rule here would
+     stretch the header row to match the 76px data-row height too. */
+  .cmp-row:not(.head) > .cmp-name, .cmp-row:not(.head) > .cmp-cell, .cmp-row:not(.head) > .cmp-consistency{
+    padding:12px 10px; min-height:76px; box-sizing:border-box;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .cmp-row:not(.head):hover > *{ background:var(--panel-2); }
+  .cmp-row.winner > *{ background:var(--go-soft); }
+  .cmp-row.winner:hover > *{ background:var(--go-soft); }
+  .cmp-row.ref-row > *{ background:transparent; border-top:1px dashed var(--border); border-bottom:1px dashed var(--border); }
+  .cmp-row.ref-row > *:first-child{ border-left:1px dashed var(--border); }
+  .cmp-row.ref-row > *:last-child{ border-right:1px dashed var(--border); }
+  .cmp-row:not(.head) > *:first-child{ border-top-left-radius:8px; border-bottom-left-radius:8px; }
+  .cmp-row:not(.head) > *:last-child{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
+  .cmp-name{ font-size:13.5px; font-weight:600; text-align:center; }
+  .cmp-name small{ display:block; font-weight:400; color:var(--text-lo); font-size:11.5px; margin-top:1px; }
+  .cmp-view{ font-size:11px; font-weight:400; color:var(--text-lo); text-decoration:none; }
+  .cmp-view:hover{ color:var(--accent); }
+  .cmp-cell{ text-align:center; font-family:"Roboto Mono",monospace; align-items:center; }
+  .cmp-cell .cmp-rate{ font-size:14px; font-weight:700; color:var(--text-hi); }
+  .cmp-cell.top2 .cmp-rate{ color:var(--go); }
+  .cmp-cell .cmp-sub{ font-size:10.5px; color:var(--text-lo); margin-top:2px; }
+  .cmp-cell.pending{ color:var(--text-lo); font-style:italic; font-size:11.5px; }
+  .cmp-consistency{ text-align:right; flex-direction:row; align-items:center; justify-content:flex-end; }
+  .cmp-pill{
+    display:inline-flex; align-items:center; gap:5px; font-family:"Roboto Mono",monospace;
+    font-size:10.5px; font-weight:700; letter-spacing:.03em; padding:4px 9px; border-radius:100px;
+    white-space:nowrap;
+  }
+  .cmp-pill.full{ background:var(--go-soft); color:var(--go); }
+  .cmp-pill.partial{ background:var(--accent-soft); color:var(--accent); }
+  .cmp-pill.none{ background:var(--slate-soft); color:var(--slate); }
+  .cmp-pill.ref{ background:var(--panel-2); color:var(--text-lo); }
+  .cmp-pill.drop{ background:var(--gap-soft); color:var(--gap); }
+  .cmp-footnote{ margin:14px 2px 0; font-size:11.5px; color:var(--text-lo); line-height:1.6; }
+  @media (max-width:720px){ .cmp-table{ min-width:720px; } }
+
+  /* synthesis cards */
+  .synth-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media (max-width:860px){ .synth-grid{ grid-template-columns:1fr; } }
+  .synth-card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px 20px; box-shadow:var(--shadow); }
+  .synth-card .tag{ font-family:"Roboto Mono",monospace; font-size:11px; color:var(--accent); font-weight:600; letter-spacing:.04em; }
+  .synth-card h4{ font-size:15px; margin:8px 0 8px; font-weight:700; line-height:1.3; }
+  .synth-card p{ font-size:13.5px; color:var(--text-lo); line-height:1.6; margin:0; }
+
+  /* recommendations / headline findings — shared numbered-list pattern */
+  .reco-list{ display:flex; flex-direction:column; gap:0; background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+  .reco-item{ display:grid; grid-template-columns:44px 1fr; gap:16px; padding:16px 20px; border-bottom:1px solid var(--border); }
+  .reco-item:last-child{ border-bottom:none; }
+  .reco-num{ font-family:"Roboto Mono",monospace; font-weight:700; font-size:18px; color:var(--accent); }
+  .reco-item p{ margin:0; font-size:13.8px; line-height:1.55; color:var(--text-hi); }
+  .reco-item .pill{ margin-bottom:8px; }
+  /* Groups findings/recommendations into labelled clusters (e.g. "Do first", "Worth
+     doing") — each group is its own .reco-list so the rounded-corner/shadow card look
+     is preserved per group rather than one long undifferentiated list. */
+  .reco-group{ margin-bottom:22px; }
+  .reco-group:last-child{ margin-bottom:0; }
+  .reco-group-title{
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:11.5px; font-weight:700;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--text-lo); margin:0 0 10px;
+  }
+
+  /* limitations */
+  .limit-panel{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px 22px; box-shadow:var(--shadow); }
+  .limit-panel ul{ margin:0; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:12px; }
+  .limit-panel li{ display:grid; grid-template-columns:20px 1fr; gap:10px; font-size:13.5px; color:var(--text-lo); line-height:1.55; }
+  .limit-panel li .dash{ color:var(--gap); font-weight:700; }
+  .limit-panel li b{ color:var(--text-hi); }
+
+  /* footer / source files */
+  footer{ margin-top:56px; padding-top:22px; }
+  .filetable{ width:100%; border-collapse:collapse; font-size:13px; }
+  .filetable th{ text-align:left; font-family:"Roboto Mono",monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-lo); font-weight:600; padding:8px 10px; border-bottom:1px solid var(--border); }
+  .filetable td{ padding:9px 10px; color:var(--text-hi); }
+  .filetable td.file{ font-family:"Roboto Mono",monospace; font-size:12px; }
+  .filetable td.num{ text-align:right; font-family:"Roboto Mono",monospace; color:var(--text-lo); }
+  .filetable tr.pending td{ color:var(--text-lo); font-style:italic; }
+  .filetable tr.emphasis td{ color:var(--accent); font-weight:700; } #poolTable td{ border-bottom:none; }
+  .foot-note{ margin-top:18px; font-size:12px; color:var(--text-lo); line-height:1.6; }
+  .foot-note code{ font-family:"Roboto Mono",monospace; background:var(--panel-2); padding:1px 5px; border-radius:4px; }
+
+  ::selection{ background:var(--accent-soft); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+
+  .topbar{ background:var(--panel); border-bottom:1px solid var(--border); }
+  .topbar-inner{ max-width:1180px; margin:0 auto; padding:14px 20px; display:flex; justify-content:center; gap:8px; }
+
+  /* ============ PAGE ANCHOR (right-side section nav) ============ */
+  /* .page-shell puts .wrap and .page-anchor side by side as flex items, so the anchor
+     reserves real layout space instead of floating over the content (which is what
+     caused the overlap) — it only ever shows once there's actually room for both:
+     wrap's box is a fixed 1180px (border-box, so padding's included) + 164px anchor
+     = 1344px minimum, so the 1440px breakpoint below always clears that with room to
+     spare. No gap between them, and justify-content:center on the combined (wrap +
+     anchor) block means the left margin (viewport edge to wrap) and right margin
+     (anchor to viewport edge) come out equal automatically. */
+  .page-shell{ display:flex; justify-content:center; align-items:flex-start; gap:0; }
+  .page-anchor{ width:220px; flex:0 0 220px; margin-right:24px; position:sticky; top:120px; display:none; }
+  @media (min-width:1440px){ .page-anchor{ display:block; } }
+  .page-anchor .anchor-title{
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:10.5px; font-weight:700;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--text-lo); margin-bottom:8px;
+  }
+  .page-anchor ul{ list-style:none; margin:0; padding:0; border-left:2px solid var(--border); }
+  .page-anchor li{ margin:0; }
+  .page-anchor a{
+    display:block; padding:6px 0 6px 14px; margin-left:-2px; border-left:2px solid transparent;
+    font-size:12.5px; color:var(--text-lo); text-decoration:none; line-height:1.35;
+  }
+  .page-anchor a:hover{ color:var(--text-hi); }
+  .page-anchor a.active{ color:var(--accent); border-left-color:var(--accent); font-weight:600; }
+  .page-anchor li.anchor-group{
+    padding:14px 0 4px 14px; font-family:"Roboto Mono", ui-monospace, monospace;
+    font-size:9.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--text-lo); opacity:.7;
+  }
+  .page-anchor li.anchor-group:first-child{ padding-top:0; }
+  .site-nav-link{
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:12px; font-weight:600;
+    letter-spacing:.04em; text-decoration:none; color:var(--text-lo);
+    padding:8px 16px; border-radius:6px; border:1px solid transparent;
+  }
+  .site-nav-link.active{ color:var(--text-hi); background:var(--panel-2); border-color:var(--border); }
+  .site-nav-link:hover:not(.active){ color:var(--text-hi); }
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a href="./" class="site-nav-link active">Findings</a>
+    <a href="./chat/" class="site-nav-link">Chat Demo</a>
+    <a href="./mockups/" class="site-nav-link">Mockup Sites</a>
+    <a href="./queries/" class="site-nav-link">Query Set</a>
+  </div>
+</nav>
+
+<div class="page-shell">
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow" style="margin-bottom:24px;">IFN736 Industry Project (Phase 2) · Group 22</div>
+    <h1>Is&nbsp;Flight&nbsp;Centre&nbsp;on&nbsp;the&nbsp;board?</h1>
+    <div class="masthead-row">
+      <p class="sub">Tests whether Gemini recommends Flight Centre three ways — from memory, live web search, and reading Flight Centre's own pages — across 19 real travel conversations, and compares how 9 page-structure variants perform.</p>
+      <div class="meta-block">
+        <div class="meta-row"><b>Model</b>&nbsp;gemini-3.5-flash-lite</div>
+        <div class="meta-row"><b>Last updated</b>&nbsp;12 Oct 2026</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="banner">
+    <div class="icon">i</div>
+    <div>
+      <p>The leaderboard below <b>compares Elle's, Yuva's, Akshay's and Matthew's runs side by side</b> rather than pooling them into one ranking — the same 19-conversation script re-run by different team members on separate accounts/environments, to check whether a result holds up across environments or is just noise from Gemini's own response randomness (see Limitations). Elle, Akshay and Matthew used a 20,000-character content-extraction depth; Yuva used the original 8,000-character depth. <b>V4 — Full + Tables</b> and <b>Site B — Full composite</b> place top-2 in 3 of the 4 runs — <b>Akshay's run places both lower.</b> That's not a one-off flip: across all three richest, multi-element variants (V2, Site B, V4), how often Gemini names Flight Centre explicitly forms the same order every time — Elle highest, Matthew and Yuva mid-range, Akshay lowest — while the single-element pages (Baseline, V1, P3–P5) show no such spread, and extraction depth doesn't explain it (Elle and Akshay both used 20k-char). Pooled totals (n=2844 combined) are shown per variant as supporting context, not the headline ranking.</p>
+    </div>
+  </div>
+
+  <!-- ===================== HEADLINE BOARD ===================== -->
+  <section id="sec-headline" class="section-group-start">
+    <div class="group-eyebrow">Part 1 — The Results</div>
+    <div class="section-head">
+      <h2>Headline results</h2>
+      <span class="hint">Flight Centre mention rate — % of turns where Flight&nbsp;Centre is named organically</span>
+    </div>
+    <div class="board" id="board"></div>
+    <div class="signal-card">
+      <div class="signal-num num">97.6<small>%</small></div>
+      <div class="signal-body">
+        <div class="signal-title">The result that actually holds up</div>
+        <p>1132 of 1160 injected mentions (pooled across all 4 runs) name Flight&nbsp;Centre first in the response (97.6%), and 1142 of 1160 (98.4%) present it as a recommendation rather than a passing mention — versus organic baseline, where every mention scored “Listed” and none led or recommended. These turns only ever contain Flight&nbsp;Centre’s own page content, so there’s no competitor present to be named instead — this measures how decisively Gemini uses the injected content, not a head-to-head win. The named-first figure holds up run by run in a way the variant ranking below does not (96.3% in Elle’s, 97.5% in Yuva’s, 98.8% in Akshay’s, 98.2% in Matthew’s).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== STAGE + COMPETITORS ===================== -->
+  <section id="sec-journey">
+    <div class="section-head">
+      <h2>Journey stage &amp; competitors</h2>
+      <span class="hint">Where Flight Centre shows up in the journey, and who gets named instead</span>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Where in the journey does Flight Centre show up?</h3>
+        <div class="card-hint">Mention rate by journey stage — baseline recall vs. once Flight Centre's content is injected</div>
+        <div class="stage-chart" id="stageChart"></div>
+        <div class="legend">
+          <span><i style="background:var(--slate)"></i>Recall — Baseline</span>
+          <span><i style="background:var(--accent)"></i>Page Reading — Content-injected</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Who gets named instead</h3>
+        <div class="card-hint">Brand mentions across the same 79 baseline turns</div>
+        <div id="competitorChart"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== POOLED SIGNIFICANCE ===================== -->
+  <section id="sec-leaderboard" class="section-group-start">
+    <div class="group-eyebrow">Part 2 — The Evidence</div>
+    <div class="section-head">
+      <h2>Run-by-run consistency</h2>
+      <span class="hint">Excl. Book turn · same 9 variants, compared run by run — the detail behind the pooled verdict below ·
+        <a href="mockups/" target="_blank" rel="noopener">browse all 9 pages ↗</a>
+      </span>
+    </div>
+    <div class="card">
+      <div class="sig-note">
+        <span>⚠</span>
+        <span id="sigNoteText"></span>
+      </div>
+      <div class="cmp-table-wrap">
+        <div class="cmp-table" id="cmpTable">
+          <div class="cmp-row head" id="cmpHead"></div>
+        </div>
+      </div>
+      <p class="cmp-footnote">“Top-2” = finished in the top two variants (excl. baseline) on that run's own excl.-Book rate. A pooled Fisher's exact test combining all 4 runs is shown in “Pooled significance” below — this table instead checks whether that pooled result actually holds up run by run, since no single run alone is reliable at n=60/variant.</p>
+    </div>
+  </section>
+
+  <!-- ===================== POOLED SIGNIFICANCE ===================== -->
+  <section id="sec-pooled">
+    <div class="section-head">
+      <h2>Pooled significance</h2>
+      <span class="hint">Pooled across all 4 runs · Fisher's exact test on combined counts (n=240 per variant, excl. Book turn)</span>
+    </div>
+    <div class="card">
+      <p style="margin:0 0 16px; font-size:13px; line-height:1.6; color:var(--text-lo);">Each individual run only has n=60 per variant — too small for any one run's p-value to be trusted on its own (see <a href="#sec-leaderboard">run-by-run consistency above</a>). Pooling all 4 runs together gives n=240 per variant and more statistical power, but as the table above shows, several variants swing sharply between runs — so these pooled figures are shown as supporting context alongside the run-by-run picture, not in place of it.</p>
+      <div class="sig-note">
+        <span>⚠</span>
+        <span id="poolNoteText"></span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="filetable" id="poolTable">
+          <thead><tr><th style="text-align:center">Rank</th><th>Variant</th><th style="text-align:right">Pooled rate (n=240)</th><th style="text-align:right">Pooled p</th><th style="text-align:right">Beat baseline</th></tr></thead>
+          <tbody id="poolTableBody"></tbody>
+        </table>
+      </div>
+      <p class="cmp-footnote" id="poolFootnote"></p>
+    </div>
+  </section>
+
+  <!-- ===================== SITE COMPARISON (moved above) ===================== -->
+
+  <!-- ===================== FOLLOW-UP: P2 REWORDING ===================== -->
+  <section id="sec-followup">
+    <div class="section-head">
+      <h2>Follow-up: does rewording P2 help further?</h2>
+      <span class="hint">4 runs, Elle only, same 19 conversations on both pages · secondary test — not part of the 4-person study above</span>
+    </div>
+    <div class="card">
+      <div class="sig-note">
+        <span>⚠</span>
+        <span><b>Not statistically significant.</b> The restructured version matched or slightly exceeded the original — it did not clearly outperform it. Treat this as inconclusive, not as evidence that rewording alone improves visibility.</span>
+      </div>
+      <p style="margin:0 0 16px; font-size:13px; line-height:1.6; color:var(--text-lo);">
+        <b>P2 restructured</b> keeps P2's same 8 FAQ topics and facts — no claims added or removed — rewritten answer-first, with real <code>&lt;h3&gt;</code> question headings. Live at
+        <a href="mockups/06_p2_faq_only_v3_restructured.html" target="_blank" rel="noopener">mockups/06_p2_faq_only_v3_restructured.html ↗</a> (listed as <b>P2.1</b> on the <a href="mockups/" target="_blank" rel="noopener">Mockup Sites page</a>).
+      </p>
+      <div style="overflow-x:auto;">
+        <table class="filetable">
+          <thead><tr><th>Run</th><th style="text-align:right">P2</th><th style="text-align:right">P2 restructured</th><th style="text-align:right">P2 restructured − P2</th><th style="text-align:right">Fisher p</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td class="num">38.3%</td><td class="num">43.3%</td><td class="num">+5.0</td><td class="num">0.71</td></tr>
+            <tr><td>2</td><td class="num">41.7%</td><td class="num">36.7%</td><td class="num">−5.0</td><td class="num">0.71</td></tr>
+            <tr><td>3</td><td class="num">31.7%</td><td class="num">45.0%</td><td class="num">+13.3</td><td class="num">0.19</td></tr>
+            <tr><td>4</td><td class="num">40.0%</td><td class="num">43.3%</td><td class="num">+3.3</td><td class="num">0.85</td></tr>
+            <tr class="emphasis"><td>Pooled (n=240/page)</td><td class="num">37.9%</td><td class="num">42.1%</td><td class="num">+4.2</td><td class="num">0.40</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cmp-footnote">Paired by conversation × turn: P2 restructured-only 34, P2-only 24 (McNemar p=0.24). By conversation: P2 restructured ahead in 10, behind in 7, tied in 2 (p=0.17). Judge-scored rubric metrics were equal within 0.1 between the two pages except Relevance (P2 restructured 2.45 vs P2 2.55, p=0.32) — unverified Gemini self-scores, same caveat as elsewhere on this page. Run 3 drives most of the gap — without it, the pooled difference is about +1pt — and identical pages swung from −5 to +13 points between runs, run-to-run noise on the same scale as the measured effect. The same 19 conversations were reused across all 4 runs, so these p-values are somewhat optimistic, same limitation as the main study above.</p>
+    </div>
+  </section>
+
+  <!-- ===================== SYNTHESIS ===================== -->
+  <section id="sec-synthesis" class="section-group-start">
+    <div class="group-eyebrow">Part 3 — What It Means</div>
+    <div class="section-head">
+      <h2>Key takeaways</h2>
+      <span class="hint">Headline findings, each tagged with how much to trust it</span>
+    </div>
+    <div class="reco-list" id="findingsList"></div>
+  </section>
+
+  <!-- ===================== RECOMMENDATIONS ===================== -->
+  <section id="sec-recommendations">
+    <div class="section-head">
+      <h2>Recommendations</h2>
+      <span class="hint">Grouped by what to act on now vs. later</span>
+    </div>
+    <div id="recoGroups"></div>
+  </section>
+
+  <!-- ===================== LIMITATIONS ===================== -->
+  <section id="sec-limitations">
+    <div class="section-head"><h2>Limitations & caveats</h2></div>
+    <div class="limit-panel">
+      <ul id="limitList"></ul>
+    </div>
+  </section>
+
+  <footer id="sec-sources">
+    <div class="eyebrow" style="margin-bottom:10px;">Source files</div>
+    <div style="overflow-x:auto;">
+      <table class="filetable">
+        <thead><tr><th>Version</th><th>Result file</th><th style="text-align:right">Rows</th></tr></thead>
+        <tbody id="fileTable"></tbody>
+      </table>
+    </div>
+    <p class="foot-note">All rubric scores (Relevance, Response Quality, Exposure, Faithful Credit, Causal Impact, Readability &amp; Structure, Trustworthiness) are unverified Gemini self-scores — a first-pass signal, not final numbers, until human spot-checked. <code>FC Mentioned</code> is a deterministic string match and is reliable as-is. The Run 1 — Elle file above supersedes an earlier 8,000-character-extraction run of the same script, replaced 16 Sep 2026 when extraction depth was increased to 20,000 characters — see Limitations.</p>
+  </footer>
+
+</div>
+
+<nav class="page-anchor" id="pageAnchor" aria-label="Section navigation">
+  <div class="anchor-title">On this page</div>
+  <ul>
+    <li class="anchor-group">Part 1 — The Results</li>
+    <li><a href="#sec-headline" data-target="sec-headline">Headline results</a></li>
+    <li><a href="#sec-journey" data-target="sec-journey">Journey stage &amp; competitors</a></li>
+    <li class="anchor-group">Part 2 — The Evidence</li>
+    <li><a href="#sec-leaderboard" data-target="sec-leaderboard">Run-by-run consistency</a></li>
+    <li><a href="#sec-pooled" data-target="sec-pooled">Pooled significance</a></li>
+    <li><a href="#sec-followup" data-target="sec-followup">Follow-up: P2 rewording</a></li>
+    <li class="anchor-group">Part 3 — What It Means</li>
+    <li><a href="#sec-synthesis" data-target="sec-synthesis">Key takeaways</a></li>
+    <li><a href="#sec-recommendations" data-target="sec-recommendations">Recommendations</a></li>
+    <li><a href="#sec-limitations" data-target="sec-limitations">Limitations & caveats</a></li>
+  </ul>
+</nav>
+
+</div>
+
+<script>
+(function(){
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- DATA ----------
+  var versions = [
+    { name:'Recall — Baseline', sub:'No tools, no injected content — run via the Gemini API (Python), independent of browser session.', rate:5.1, sample:'4 / 79 turns', convos:'3 of 19 conversations', note:'16 of 19 conversations never mention Flight Centre at all.' },
+    { name:'Live Search — Search-Grounded', sub:'Live Google Search grounding, full 19-conversation set — run manually, turn by turn.', rate:7.6, sample:'6 / 79 turns', convos:'4 of 19 conversations', note:'1 new conversation beyond Recall (Q18) — still narrow, and every mention is “Listed,” never “Recommended.”' },
+    { name:'Page Reading — Content-Injected', sub:'Flight Centre’s ProCat mockup content pasted into turn 1, all 4 runs — run via the Gemini API (Python), independent of browser session.', rate:22.3, sample:'482 / 2160 turns', convos:'9 site variants × 19 conversations × 4 runs', note:'Gemini names Flight Centre first in 97.6% of these mentions and frames it as a recommendation in 98.4% — not just a passing reference — though these turns never contain competitor content for Gemini to rank against, so this is a content-uptake signal, not a competitive win. <b style="color:var(--accent)">By run (incl. Book): Elle 49.4%, Yuva 39.8%, Akshay 34.6%, Matthew 39.4%</b> — reach is consistent across runs; it’s which site variant wins that swings hard — Akshay’s run names Flight Centre explicitly least often on the three richest variants, the low end of a gradient that runs Elle highest to Akshay lowest (see comparison table below).' }
+  ];
+
+  var stages = ['Dream','Plan','Engage','Book','Pre-trip'];
+  var baselineStage = [0,0,10.5,10.5,0];
+  var injectedStage = [17.0,11.7,33.8,99.1,50.9];
+
+  var competitors = [
+    { name:'Booking.com', val:18 },
+    { name:'Expedia', val:17 },
+    { name:'Airbnb', val:17 },
+    { name:'Google Flights', val:11 },
+    { name:'Skyscanner', val:9 },
+    { name:'Flight Centre', val:4, fc:true }
+  ];
+
+  // Rates below EXCLUDE the Book turn (99.1% mention rate across every variant incl. baseline —
+  // it saturates and inflates all nine equally, hiding the real comparison). Full-inclusive rates
+  // are shown as a secondary figure inside each run's cell. "Top-2" flags whether a variant placed
+  // in the top two (excl. baseline) on THAT run's own rate. `pooled` combines all runs so far into
+  // one n=2133 Fisher's-exact test and is shown as smaller, secondary text under the variant name —
+  // see the sig-note and Limitations for why we lead with per-run agreement instead of that pooled
+  // figure: Run 1 (Elle) and Run 2 (Akshay) share a 20k-char extraction depth and still disagree
+  // sharply (V4, Site B), and Run 4 (Yuva) additionally differs in extraction depth (8k), so no pair
+  // of runs here can be assumed interchangeable draws from the same distribution.
+  var MOCKUP_BASE = 'mockups/';
+  var RUNS_SO_FAR = 4;
+  // Order follows the mockup build sequence (see /mockups/) rather than performance: the
+  // Incremental Comparison Ladder (Site A → V1 → V2 → Site B → V4) followed by the Isolated
+  // Technique Variants (P2 → P3 → P4 → P5) — easier to trace the story than a performance sort,
+  // and the "winner" row is already highlighted regardless of where it falls in this order.
+  var comparisonRows = [
+    { name:'Site A — Unoptimised', sub:'Unoptimised: Reference / control page', url:MOCKUP_BASE+'01_site_a_baseline.html', ref:true,
+      elle:{rate:18.3, full:38.0}, yuva:{rate:16.7, full:35.4}, akshay:{rate:15.0, full:35.4}, matthew:{rate:18.3, full:38.0},
+      pooled:{rate:17.1, full:36.7} },
+    { name:'V1 — Schema only', sub:'TravelAgency + Product + AggregateRating + ItemList schema — no FAQ', url:MOCKUP_BASE+'02_v1_schema_only.html',
+      elle:{rate:20.0, rank:'6', full:39.2, p:'1.000', top2:false}, yuva:{rate:21.7, rank:'4', full:40.5, p:'0.643', top2:false},
+      akshay:{rate:13.3, rank:'4', full:32.9, p:'1.000', top2:false}, matthew:{rate:20.0, rank:'4', full:39.2, p:'1.000', top2:false},
+      pooled:{rate:18.8, full:38.0, p:'0.7212', delta:1.7, beatBaseline:3, sigCount:0, verdict:'weak'}, top2Count:0 },
+    { name:'V2 — Schema + FAQ', sub:'Schema markup + FAQ section — no stats, no answer-first copy', url:MOCKUP_BASE+'03_v2_schema_faq.html',
+      elle:{rate:40.0, rank:'4', full:54.4, p:'0.015', top2:false}, yuva:{rate:13.3, rank:'9', full:34.2, p:'0.799', top2:false},
+      akshay:{rate:6.7, rank:'7', full:29.1, p:'0.239', top2:false}, matthew:{rate:18.3, rank:'5', full:38.0, p:'1.000', top2:false},
+      pooled:{rate:19.6, full:38.9, p:'0.5555', delta:2.5, beatBaseline:1, sigCount:1, verdict:'weak'}, top2Count:0 },
+    { name:'Site B — Full composite', sub:'Schema + FAQ + stats + quick-answer summaries + trust bar + promo tags + SEO title/meta — no tables, no citations', url:MOCKUP_BASE+'04_site_b_full.html',
+      elle:{rate:53.3, rank:'2', full:64.6, p:'0.001', top2:true}, yuva:{rate:28.3, rank:'1', full:45.6, p:'0.189', top2:true},
+      akshay:{rate:5.0, rank:'8', full:27.8, p:'0.125', top2:false}, matthew:{rate:23.3, rank:'2', full:41.8, p:'0.654', top2:true},
+      pooled:{rate:27.5, full:44.9, p:'0.0083', delta:10.4, beatBaseline:3, sigCount:1, verdict:'strong'}, top2Count:3 },
+    { name:'V4 — Full + Tables', sub:'Schema + FAQ + stats + tables + quick-answer summaries + trust bar + promo tags + SEO title/meta — no citations', url:MOCKUP_BASE+'05_v4_full_tables.html',
+      elle:{rate:63.3, rank:'1', full:72.2, p:'0.001', top2:true}, yuva:{rate:28.3, rank:'1', full:45.6, p:'0.189', top2:true},
+      akshay:{rate:1.7, rank:'9', full:25.3, p:'0.017', top2:false}, matthew:{rate:30.0, rank:'1', full:46.8, p:'0.200', top2:true},
+      pooled:{rate:30.8, full:47.5, p:'0.0006', delta:13.7, beatBaseline:3, sigCount:2, sigNote:'1 positive, 1 negative', verdict:'strong'}, top2Count:3 },
+    { name:'P2 — FAQ only', sub:'FAQ section only — no schema markup', url:MOCKUP_BASE+'06_p2_faq_only.html',
+      elle:{rate:46.7, rank:'3', full:59.5, p:'0.002', top2:false}, yuva:{rate:18.3, rank:'6', full:38.0, p:'1.000', top2:false},
+      akshay:{rate:45.0, rank:'1', full:58.2, p:'0.001', top2:true}, matthew:{rate:15.0, rank:'8', full:35.4, p:'0.807', top2:false},
+      pooled:{rate:31.2, full:47.8, p:'0.0004', delta:14.2, beatBaseline:3, sigCount:2, sigNote:'both positive', verdict:'lowEffort'}, top2Count:1 },
+    { name:'P3 — Statistics only', sub:'Embedded stat callouts only — no schema, no FAQ', url:MOCKUP_BASE+'07_p3_stats_only.html',
+      elle:{rate:20.0, rank:'6', full:39.2, p:'1.000', top2:false}, yuva:{rate:23.3, rank:'3', full:41.8, p:'0.494', top2:false},
+      akshay:{rate:18.3, rank:'2', full:38.0, p:'0.807', top2:true}, matthew:{rate:15.0, rank:'8', full:35.4, p:'0.807', top2:false},
+      pooled:{rate:19.2, full:38.6, p:'0.6357', delta:2.1, beatBaseline:3, sigCount:0, verdict:'weak'}, top2Count:1 },
+    { name:'P4 — Tables only', sub:'Structured comparison tables only — no schema, no FAQ', url:MOCKUP_BASE+'08_p4_tables_only.html',
+      elle:{rate:13.3, rank:'9', full:31.6, p:'0.618', top2:false}, yuva:{rate:21.7, rank:'4', full:39.2, p:'0.643', top2:false},
+      akshay:{rate:10.0, rank:'6', full:30.4, p:'0.582', top2:false}, matthew:{rate:18.3, rank:'5', full:38.0, p:'1.000', top2:false},
+      pooled:{rate:15.8, full:34.8, p:'0.8057', delta:-1.3, beatBaseline:1, sigCount:0, verdict:'drop'}, top2Count:0 },
+    { name:'P5 — Citations only', sub:'Attributed customer quotes only — no schema, no formal citations', url:MOCKUP_BASE+'09_p5_citations_only.html',
+      elle:{rate:28.3, rank:'5', full:45.6, p:'0.280', top2:false}, yuva:{rate:18.3, rank:'6', full:38.0, p:'1.000', top2:false},
+      akshay:{rate:13.3, rank:'4', full:34.2, p:'1.000', top2:false}, matthew:{rate:23.3, rank:'2', full:41.8, p:'0.654', top2:true},
+      pooled:{rate:20.8, full:39.9, p:'0.3516', delta:3.7, beatBaseline:3, sigCount:0, verdict:'weak'}, top2Count:1 }
+  ];
+
+  var SIG_NOTE_HTML = '<b>V4 — Full + Tables and Site B — Full composite place top-2 in 3 of 4 runs; Akshay’s run places both lower.</b> Elle, Akshay and Matthew used 20,000-character extraction; Yuva used 8,000 — but extraction depth doesn’t explain it, since Elle and Akshay share the same depth and sit at opposite ends. Across V2, Site B and V4 (the three variants combining multiple structured elements), explicit Flight Centre naming forms the same order in every one — Elle highest, Matthew and Yuva mid-range, Akshay lowest — while the single-element pages show no such spread. <b>P2 — FAQ only</b> looked strong on Elle and Akshay alone (46.7% vs. 45.0%), but Matthew’s 15.0% (rank 8 of 9) breaks that pattern — driven by extraction depth and FAQ placement, not the naming gradient above (see Limitations). See “Pooled significance” below for the full Fisher’s exact breakdown (n=240/variant), where P2 still earns its “best low-effort pick” billing. All 4 planned runs are complete.';
+  
+  // Headline findings — numbered, each tagged with a confidence pill (reuses the same
+  // .pill classes as elsewhere on the page: go=strong, warn=moderate, slate=directional/
+  // context-only). Replaces the old 3-card synth-grid; the first two cards are merged
+  // into one "visibility gap" finding since they were making the same point twice.
+  var findings = [
+    { conf:'go', confLabel:'Confidence: strong',
+      text:'<b>The visibility gap is real.</b> With no help, Gemini named Flight Centre in just 4 of 79 baseline turns (5.1%) — only in Q01, Q02 and Q08 — and live search grounding barely moves it (7.6%, adding just Q18). Every one of those mentions scored “Listed,” never a recommendation, and 15 of 19 conversations never surface Flight Centre under either method. The gap is in being considered as a candidate at all, not in page structure.' },
+    { conf:'go', confLabel:'Confidence: strong',
+      text:'<b>Once Gemini reads Flight Centre’s own content, it uses it — and leads with it.</b> The mention rate reaches 22.3% (excl. Book turn), and of those mentions, 97.6% name Flight Centre first and 98.4% frame it as a recommendation, not a passing reference. Worth reading carefully: these turns only ever contain Flight Centre’s own page content, so there’s no competitor present to be ranked against — this shows how decisively Gemini adopts the injected content, not a competitive win. The named-first figure holds run by run across all 4 people who tested it (96.3–98.8%), making it the most consistent result in the study.' },
+    { conf:'warn', confLabel:'Confidence: moderate',
+      text:'<b>V4 and Site B are the strongest page designs.</b> Full + Tables (V4) and Full composite (Site B) place top-2 in 3 of 4 runs, pooling to 30.8% and 27.5% against 17.1% baseline. Akshay’s run places both lower, as part of a consistent naming gradient across the three richest variants (Elle highest, Akshay lowest) that extraction depth doesn’t explain (see “Pooled significance” and “Run-by-run consistency” above). All four raw transcripts check out with zero scoring errors, so this is a real difference in how each run’s Gemini responses are worded, not a data-quality issue.' },
+    { conf:'warn', confLabel:'Confidence: moderate',
+      text:'<b>P2 — FAQ only is the best-evidenced low-effort technique.</b> Pooled across all 4 runs it beats baseline at 31.2% vs. 17.1% (p=0.0004) — stronger than Site B’s own pooled p-value — though that result is driven by 2 of the 3 runs that could actually test it. Yuva’s 8,000-character extraction cut off before the FAQ section (it starts ∼11,500 characters into the page), so her run never saw the FAQ content and isn’t a null result. Treat it as the strongest-evidenced single technique tested, not as proven, and validate with a further run before committing budget.' }
+  ];
+
+  // Recommendations — same 8 items as before, regrouped into "do this now" vs. "needs
+  // more resources" vs. "stop pursuing", each with a confidence/status pill, rather than
+  // one flat numbered list. Wording is unchanged from the original recos.
+  var recoGroups = [
+    { title: 'Do first — low cost, already evidenced', items: [
+      { conf:'go', confLabel:'Confidence: strong',
+        text:'Lead any external summary with the content-uptake finding, not a “beats competitors” framing — once Flight Centre’s content is available, Gemini names it first in 97.6% of mentions and recommends it in 98.4%, vs. organic mentions always scoring “Listed.” Be upfront that these turns never contain competitor content, so this shows the content works once read, not that it won a comparison.' },
+      { conf:'go', confLabel:'Confidence: strong',
+        text:'Report Page Reading rates with the Book turn excluded, with p-values attached — Book is saturated at 99.1% across every variant including baseline, so it inflates all nine equally and hides the real comparison.' },
+      { conf:'go', confLabel:'Confidence: strong',
+        text:'Treat visibility/presence as the higher-priority problem over structure — Flight Centre isn’t a candidate at all for 16 of 19 scenarios, which no page-level restructuring fixes.' },
+      { conf:'warn', confLabel:'Confidence: moderate',
+        text:'For the lowest-effort next experiment, pilot P2 — FAQ only. Pooled across all 4 runs it beats baseline at p=0.0004 — stronger than Site B’s p=0.0083 — even though only 2 of the 3 runs that could test it drove that result (Yuva’s 8k-char extraction never reached the FAQ section). Treat it as the strongest-evidenced single technique, not as proven, and validate with a 5th run before committing budget.' }
+    ]},
+    { title: 'Worth doing — needs more resources', items: [
+      { conf:'warn', confLabel:'Confidence: moderate',
+        text:'V4 — Full + Tables and Site B — Full composite remain the strongest overall candidates (highest pooled rates, top-2 in 3 of 4 runs) — but Akshay’s run rates both lower, as part of a consistent Elle-high-to-Akshay-low naming gradient across the three richest variants — confirmed as a real wording difference, not a scoring error, and not explained by extraction depth. Worth noting as a limit of relying on any single run, not a reason to discount V4 or Site B.' },
+      { conf:'warn', confLabel:'Confidence: moderate',
+        text:'Have a human spot-check a sample of the LLM-judge rubric scores before reporting externally — the Flight Centre-mention finding is a reliable deterministic match, but the 0–3 rubric scores carry self-scoring bias risk.' }
+    ]},
+    { title: 'Lower priority', items: [
+      { conf:'slate', confLabel:'Not recommended',
+        text:'Drop P4 — Tables only from further consideration — it pools below baseline (15.8% vs. 17.1%) and beat baseline in only 1 of 4 runs.' },
+      { conf:'slate', confLabel:'Status update',
+        text:'Live Search (search-grounded) is now extended to the full 19-conversation set. Update any earlier materials still citing the 5-conversation subset or the “same 3 conversations, every method” framing.' }
+    ]}
+  ];
+
+  var limitations = [
+    '<b>Gemini only</b> — chosen for free access via a Google API key; GPT-4, Claude and Perplexity were out of scope for automated testing. Flight Centre offered to fund API credits for testing other assistants, but the team didn’t take this up due to time constraints. These findings describe Gemini’s behaviour specifically, not AI search behaviour in general.',
+    '<b>Page Reading never injects competitor content</b> — each turn pastes only Flight Centre’s own mockup page, so when Flight Centre is mentioned it is almost always “first” and “Recommended” by construction, not because it won a comparison. Read the Page Reading ranking-position and recommendation-rate figures as a content-uptake signal, not a competitive one.',
+    '<b>Page Reading mockup sites are prototypes, not Flight Centre’s live site</b> — product listings are drawn from a real ProCat sample, but star ratings and review counts are randomised placeholder numbers (a deliberate choice, so the test isolates the effect of each optimisation technique rather than the effect of rating/review values), and the page interface itself was built by the team for this study. Results describe how Gemini responds to this content, not guaranteed behaviour on Flight Centre’s actual site.',
+    '<b>Live Search collected manually</b> — run turn by turn in Google AI Studio using the same scoring rubric as Recall/Page Reading, but applied by hand rather than through the automated harness, so repeat-run consistency wasn’t tested the way it was for Recall.',
+    '<b>Two extraction depths across these runs</b> — Elle, Akshay and Matthew used a 20,000-character extraction limit; Yuva used the original 8,000-character limit. Noted for completeness, not as an explanation for the naming gradient described next — Elle and Akshay share the same 20k depth and sit at opposite ends of it.',
+    '<b>Pooling can hide run-to-run disagreement</b> — several variants swing 25+ points between individual runs (see “Run-by-run consistency” above), which a single pooled Fisher’s-exact test doesn’t surface. Pooled p-values are shown as supporting context, not the primary evidence.',
+    '<b>Explicit brand-naming forms a consistent gradient on the richest variants</b> — across V2 — Schema + FAQ, Site B — Full composite and V4 — Full + Tables, how often Gemini names “Flight Centre” explicitly (rather than just using the injected price or package detail) falls in the same order every time: Elle highest (54–72%), Matthew and Yuva mid-range (26–47%), Akshay lowest (25–29%). The single-element pages (Baseline, V1, P3–P5) show no such spread, and extraction depth doesn’t explain it (Elle and Akshay both used 20k-char). We checked all four raw transcripts for scoring errors and fetch failures and found none — Akshay’s responses do use the injected price and package details, just more often without naming the brand. The likely driver is response-wording style interacting with denser injected content, but the root cause isn’t confirmed. No variant places top-2 in all 4 completed runs.',
+    '<b>Run-to-run noise</b> — baseline was run twice this sprint on identical scripted turns; 2 of 4 Flight Centre mentions’ ranking position changed between runs purely from the model generating a different organic answer the second time. This is exactly why the Page Reading runs are compared individually rather than trusted as one pooled figure.',
+    '<b>Scripted turns</b> — conversation wording is fixed rather than adapted to the AI’s actual prior answer, a Query Set design limitation shared by all three versions.'
+  ];
+
+  var files = [
+    ['Recall — Baseline', 'multi_turn_query19_results.csv', '79'],
+    ['Live Search — Search-Grounded (manual)', 'Manual_Grounded_Test_Template_scored.xlsx', '79'],
+    ['Page Reading — Content-Injected (ProCat, Run 1 — Elle, 20k-char extraction, 16 Sep 2026)', 'elle_multi_turn_query19_injection_results_procat.csv', '711'],
+    ['Page Reading — Content-Injected (ProCat, Run 2 — Akshay, 20k-char extraction, 16 Sep 2026)', 'akshay_multi_turn_query19_injection_results_procat.csv', '711'],
+    ['Page Reading — Content-Injected (ProCat, Run 3 — Matthew, 20k-char extraction, 15–17 Sep 2026)', 'matthew_multi_turn_query19_injection_results_procat.csv', '711'],
+    ['Page Reading — Content-Injected (ProCat, Run 4 — Yuva, 8k-char extraction, 15 Sep 2026)', 'yuva_multi_turn_query19_injection_results_procat.csv', '711']
+  ];
+  var pendingFiles = [];
+
+  // ---------- RENDER: headline board ----------
+  var board = document.getElementById('board');
+  versions.forEach(function(v){
+    var row = document.createElement('div');
+    row.className = 'board-row';
+    row.innerHTML =
+      '<div><div class="v-name">'+v.name+'</div><div class="v-sub">'+v.sub+'</div></div>'+
+      '<div class="v-rate num" data-target="'+v.rate+'">'+v.rate.toFixed(1)+'<small>%</small></div>'+
+      '<div class="v-detail"><span class="k">'+v.sample+'</span> · '+v.convos+'<br>'+v.note+'</div>';
+    board.appendChild(row);
+  });
+
+  // ---------- RENDER: stage chart ----------
+  var stageChart = document.getElementById('stageChart');
+  var maxStage = 100;
+  stages.forEach(function(s, i){
+    var col = document.createElement('div');
+    col.className = 'stage-col';
+    var bH = Math.max(2, (baselineStage[i]/maxStage)*132);
+    var iH = Math.max(2, (injectedStage[i]/maxStage)*132);
+    col.innerHTML =
+      '<div class="bars">'+
+        '<div class="bar baseline" style="height:0" data-h="'+bH+'"><span class="val">'+baselineStage[i]+'%</span></div>'+
+        '<div class="bar injected" style="height:0" data-h="'+iH+'"><span class="val">'+injectedStage[i]+'%</span></div>'+
+      '</div>'+
+      '<div class="stage-label">'+s+'</div>';
+    stageChart.appendChild(col);
+  });
+
+  // ---------- RENDER: competitor bars ----------
+  var compWrap = document.getElementById('competitorChart');
+  var maxComp = Math.max.apply(null, competitors.map(function(c){return c.val;}));
+  competitors.forEach(function(c){
+    var row = document.createElement('div');
+    row.className = 'hbar-row';
+    row.innerHTML =
+      '<div class="hbar-label'+(c.fc?' fc':'')+'">'+c.name+'</div>'+
+      '<div class="hbar-track"><div class="hbar-fill'+(c.fc?' fc':'')+'" data-w="'+(c.val/maxComp*100)+'"></div></div>'+
+      '<div class="hbar-val">'+c.val+'</div>';
+    compWrap.appendChild(row);
+  });
+
+  // ---------- RENDER: pooled significance table ----------
+  var POOL_NOTE_HTML = '<b>P2 — FAQ only is the best-evidenced low-effort technique.</b> Pooled across all 4 runs it beats baseline by +14.2pp (31.2% vs 17.1%) at p=0.0004 — a stronger pooled result than Site B (p=0.0083) and close to V4’s (p=0.0006) — and it’s cheaper to implement than either (FAQ copywriting only, no schema pipeline or fabricated review data). <b>Caveat:</b> that significance is driven by 2 of the 3 runs that could actually test it (Elle, Akshay — both individually p&lt;0.01). Matthew’s full 20k-char extraction saw the FAQ and still showed no effect (15.0%); Yuva’s 8,000-character extraction cut off before the FAQ section (∼11,500 characters into the page), so her run never tested FAQ at all and isn’t a null result. Treat this as the strongest-evidenced single technique across a combined 240-turn sample, not as proven.';
+  var POOL_FOOTNOTE_HTML = '<b>V4 — Full + Tables</b> and <b>Site B — Full composite</b> remain the strongest overall ceiling if Flight Centre pursues the full bundle (highest pooled rates and significance) — at higher implementation effort than P2. <b>P4 — Tables only</b> pools below baseline (15.8% vs 17.1%) and beat baseline in only 1 of 4 runs — not recommended for further consideration. “Beat baseline” = pooled rate exceeded baseline in that many of the 4 individual runs. See “Run-by-run consistency” above for the per-run detail behind every number here.';
+  document.getElementById('poolNoteText').innerHTML = POOL_NOTE_HTML;
+  document.getElementById('poolFootnote').innerHTML = POOL_FOOTNOTE_HTML;
+
+  // Ranking is by pooled rate, baseline excluded (it's the reference, not a ranked
+  // contender). The low-effort pick (P2) gets emphasis text instead of a row background,
+  // so it reads as the standout without implying the other rows are lesser data.
+  var poolTableBody = document.getElementById('poolTableBody');
+  var poolRefRow = comparisonRows.filter(function(r){ return r.ref; })[0];
+  var poolRefTr = document.createElement('tr');
+  poolRefTr.innerHTML =
+    '<td style="text-align:center">ref</td>'+
+    '<td>'+poolRefRow.name+'</td>'+
+    '<td class="num">'+poolRefRow.pooled.rate+'%</td>'+
+    '<td class="num">—</td>'+
+    '<td class="num">ref</td>';
+  poolTableBody.appendChild(poolRefTr);
+
+  var poolSorted = comparisonRows.filter(function(r){ return !r.ref; }).slice().sort(function(a,b){
+    return b.pooled.rate - a.pooled.rate;
+  });
+  poolSorted.forEach(function(row, i){
+    var p = row.pooled;
+    var tr = document.createElement('tr');
+    if (p.verdict === 'lowEffort') tr.className = 'emphasis';
+    var nameCell = row.name + (p.verdict === 'lowEffort' ? ' ← best-evidenced, low-effort' : '');
+    tr.innerHTML =
+      '<td style="text-align:center">'+(i+1)+'</td>'+
+      '<td>'+nameCell+'</td>'+
+      '<td class="num">'+p.rate+'%</td>'+
+      '<td class="num">'+p.p+'</td>'+
+      '<td class="num">'+p.beatBaseline+'/4</td>';
+    poolTableBody.appendChild(tr);
+  });
+
+  // ---------- RENDER: comparison table ----------
+  document.getElementById('sigNoteText').innerHTML = SIG_NOTE_HTML;
+
+  var cmpHead = document.getElementById('cmpHead');
+  cmpHead.innerHTML =
+    '<div class="sortable" data-sort-key="_reset" title="Click to reset to build order">Variant</div>'+
+    '<div class="sortable" data-sort-key="elle" title="Click to sort by Elle\'s rate">Run 1 · Elle<br><span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:9.5px;">20k-char extraction</span><span class="sort-arrow" data-arrow-for="elle"></span></div>'+
+    '<div class="sortable" data-sort-key="akshay" title="Click to sort by Akshay\'s rate">Run 2 · Akshay<br><span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:9.5px;">20k-char extraction</span><span class="sort-arrow" data-arrow-for="akshay"></span></div>'+
+    '<div class="sortable" data-sort-key="matthew" title="Click to sort by Matthew\'s rate">Run 3 · Matthew<br><span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:9.5px;">20k-char extraction</span><span class="sort-arrow" data-arrow-for="matthew"></span></div>'+
+    '<div class="sortable" data-sort-key="yuva" title="Click to sort by Yuva\'s rate">Run 4 · Yuva<br><span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:9.5px;">8k-char extraction</span><span class="sort-arrow" data-arrow-for="yuva"></span></div>'+
+    '<div class="cmp-consistency sortable" data-sort-key="top2Count" title="Click to sort by cross-run consistency">Consistency<span class="sort-arrow" data-arrow-for="top2Count"></span></div>';
+
+  var cmpTable = document.getElementById('cmpTable');
+  var refRow = comparisonRows.filter(function(r){ return r.ref; })[0];
+  var defaultVariantRows = comparisonRows.filter(function(r){ return !r.ref; });
+  var sortState = { key:null, dir:'desc' };
+
+  function runCell(row, r){
+    if (!r) return '<div class="cmp-cell pending">— pending —</div>';
+    var cls = 'cmp-cell' + (r.top2 ? ' top2' : '');
+    var subText = row.ref ? 'ref · ' + r.full + '% incl. Book' : '#' + r.rank + ' · p=' + r.p;
+    return '<div class="'+cls+'"><div class="cmp-rate">'+r.rate+'%</div><div class="cmp-sub">'+subText+'</div></div>';
+  }
+
+  function buildRowEl(row){
+    var el = document.createElement('div');
+    el.className = 'cmp-row' + (row.ref ? ' ref-row' : (row.top2Count === RUNS_SO_FAR ? ' winner' : ''));
+    var consistencyHtml;
+    if (row.ref){
+      consistencyHtml = '<span class="cmp-pill ref">Reference</span>';
+    } else {
+      var pillClass = row.top2Count === RUNS_SO_FAR ? 'full' : (row.top2Count > 0 ? 'partial' : 'none');
+      consistencyHtml = '<span class="cmp-pill '+pillClass+'">Top-2 in '+row.top2Count+'/'+RUNS_SO_FAR+' runs</span>';
+    }
+    el.innerHTML =
+      '<div class="cmp-name">'+
+        '<span class="cmp-name-title">'+row.name+' <a class="cmp-view" href="'+row.url+'" target="_blank" rel="noopener" title="Open this mockup page">↗</a></span>'+
+        '<small>'+row.sub+'</small>'+
+      '</div>'+
+      runCell(row, row.elle) +
+      runCell(row, row.akshay) +
+      runCell(row, row.matthew) +
+      runCell(row, row.yuva) +
+      '<div class="cmp-consistency">'+consistencyHtml+'</div>';
+    return el;
+  }
+
+  // Reference row always stays pinned first — it's the baseline anchor, not a competitor,
+  // so it's excluded from sorting. The 8 variant rows re-render in whatever order is active.
+  function renderRows(variantRows){
+    Array.prototype.slice.call(cmpTable.querySelectorAll('.cmp-row:not(.head)')).forEach(function(n){ n.remove(); });
+    cmpTable.appendChild(buildRowEl(refRow));
+    variantRows.forEach(function(row){ cmpTable.appendChild(buildRowEl(row)); });
+  }
+
+  function sortValue(row, key){
+    return key === 'top2Count' ? row.top2Count : row[key].rate;
+  }
+
+  function updateSortIndicators(){
+    Array.prototype.slice.call(cmpHead.querySelectorAll('.sortable')).forEach(function(h){
+      h.classList.toggle('active', h.dataset.sortKey === sortState.key);
+    });
+    Array.prototype.slice.call(cmpHead.querySelectorAll('.sort-arrow')).forEach(function(a){
+      var forKey = a.getAttribute('data-arrow-for');
+      var isActive = sortState.key === forKey;
+      a.classList.toggle('active', isActive);
+      // Neutral ⇅ on every sortable column at rest (so sorting is discoverable before the
+      // first click), swapped for a bold directional arrow on whichever column is active.
+      a.textContent = isActive ? (sortState.dir === 'desc' ? ' ▾' : ' ▴') : ' ⇅';
+    });
+  }
+
+  function applySort(key){
+    if (key === '_reset'){
+      sortState = { key:null, dir:'desc' };
+      renderRows(defaultVariantRows);
+      updateSortIndicators();
+      return;
+    }
+    sortState = { key:key, dir: (sortState.key === key && sortState.dir === 'desc') ? 'asc' : 'desc' };
+    var sorted = defaultVariantRows.slice().sort(function(a,b){
+      var diff = sortValue(a,key) - sortValue(b,key);
+      return sortState.dir === 'desc' ? -diff : diff;
+    });
+    renderRows(sorted);
+    updateSortIndicators();
+  }
+
+  Array.prototype.slice.call(cmpHead.querySelectorAll('.sortable')).forEach(function(h){
+    h.addEventListener('click', function(){ applySort(h.dataset.sortKey); });
+  });
+
+  renderRows(defaultVariantRows);
+  updateSortIndicators();
+
+  // ---------- RENDER: key takeaways (findings) ----------
+  var findingsList = document.getElementById('findingsList');
+  findings.forEach(function(f, i){
+    var item = document.createElement('div');
+    item.className = 'reco-item';
+    item.innerHTML = '<div class="reco-num">'+String(i+1).padStart(2,'0')+'</div>'+
+      '<div><span class="pill '+f.conf+'"><span class="dot"></span>'+f.confLabel+'</span>'+
+      '<p>'+f.text+'</p></div>';
+    findingsList.appendChild(item);
+  });
+
+  // ---------- RENDER: recommendations (grouped) ----------
+  var recoGroupsEl = document.getElementById('recoGroups');
+  recoGroups.forEach(function(group){
+    var groupEl = document.createElement('div');
+    groupEl.className = 'reco-group';
+    var titleEl = document.createElement('div');
+    titleEl.className = 'reco-group-title';
+    titleEl.textContent = group.title;
+    groupEl.appendChild(titleEl);
+    var listEl = document.createElement('div');
+    listEl.className = 'reco-list';
+    group.items.forEach(function(r, i){
+      var item = document.createElement('div');
+      item.className = 'reco-item';
+      item.innerHTML = '<div class="reco-num">'+String(i+1).padStart(2,'0')+'</div>'+
+        '<div><span class="pill '+r.conf+'"><span class="dot"></span>'+r.confLabel+'</span>'+
+        '<p>'+r.text+'</p></div>';
+      listEl.appendChild(item);
+    });
+    groupEl.appendChild(listEl);
+    recoGroupsEl.appendChild(groupEl);
+  });
+
+  // ---------- RENDER: limitations ----------
+  var limitList = document.getElementById('limitList');
+  limitations.forEach(function(l){
+    var li = document.createElement('li');
+    li.innerHTML = '<span class="dash">—</span><span>'+l+'</span>';
+    limitList.appendChild(li);
+  });
+
+  // ---------- RENDER: file table ----------
+  var fileTable = document.getElementById('fileTable');
+  files.forEach(function(f){
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+f[0]+'</td><td class="file">'+f[1]+'</td><td class="num">'+f[2]+'</td>';
+    fileTable.appendChild(tr);
+  });
+  pendingFiles.forEach(function(name){
+    var tr = document.createElement('tr');
+    tr.className = 'pending';
+    tr.innerHTML = '<td>'+name+'</td><td class="file">— pending —</td><td class="num">—</td>';
+    fileTable.appendChild(tr);
+  });
+
+  // ---------- PAGE ANCHOR (right-side section nav) ----------
+  var anchorLinks = Array.prototype.slice.call(document.querySelectorAll('.page-anchor a'));
+  var anchorSections = anchorLinks
+    .map(function(a){ return document.getElementById(a.dataset.target); })
+    .filter(Boolean);
+
+  function setActiveAnchor(id){
+    anchorLinks.forEach(function(a){ a.classList.toggle('active', a.dataset.target === id); });
+  }
+
+  if ('IntersectionObserver' in window && anchorSections.length){
+    var anchorObserver = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting) setActiveAnchor(entry.target.id);
+      });
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+    anchorSections.forEach(function(s){ anchorObserver.observe(s); });
+  }
+
+  anchorLinks.forEach(function(a){
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      var target = document.getElementById(a.dataset.target);
+      if (target) target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    });
+  });
+
+  // ---------- ANIMATE IN ----------
+  function animate(){
+    document.querySelectorAll('.bar').forEach(function(b){ b.style.height = b.dataset.h + 'px'; });
+    document.querySelectorAll('.hbar-fill').forEach(function(b){ b.style.width = b.dataset.w + '%'; });
+    document.querySelectorAll('.lb-fill').forEach(function(b){ b.style.width = b.dataset.w + '%'; });
+
+    document.querySelectorAll('.v-rate').forEach(function(el){
+      var target = parseFloat(el.dataset.target);
+      if (reduceMotion){ el.childNodes[0].nodeValue = target; return; }
+      var start = null, dur = 900;
+      function step(ts){
+        if(!start) start = ts;
+        var p = Math.min(1, (ts-start)/dur);
+        var eased = 1 - Math.pow(1-p, 3);
+        el.childNodes[0].nodeValue = (target*eased).toFixed(1);
+        if(p<1) requestAnimationFrame(step);
+        else el.childNodes[0].nodeValue = target;
+      }
+      requestAnimationFrame(step);
+    });
+  }
+  requestAnimationFrame(function(){ requestAnimationFrame(animate); });
+})();
+</script>
+</body>
+</html>

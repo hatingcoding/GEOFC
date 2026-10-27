@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEO Chat Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;900&family=Roboto+Mono:wght@400;500;600;700&display=swap">
+<style>
+  /* ============ TOKENS (matches the dashboard) ============ */
+  :root{
+    --bg:#F4F6F9; --panel:#FFFFFF; --panel-2:#ECF0F5; --border:#D8DEE7;
+    --text-hi:#161A22; --text-lo:#57647A;
+    --accent:#A6690A; --accent-soft:#F3E3C6;
+    --go:#1F8F6C; --go-soft:#DCF1E9;
+    --gap:#C23B2E; --gap-soft:#F7E1DE;
+    --slate:#6B7A94; --slate-soft:#E4E9F0;
+    --user-bubble:#1B2029; --user-bubble-text:#F4F6F9;
+    --shadow: 0 1px 2px rgba(22,26,34,.04), 0 8px 24px -12px rgba(22,26,34,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12151C; --panel:#1B2029; --panel-2:#232936; --border:#2E3644;
+      --text-hi:#ECF0F6; --text-lo:#96A2B8;
+      --accent:#F0A93E; --accent-soft:#3A2E13;
+      --go:#4FD8A6; --go-soft:#123528;
+      --gap:#FF6B57; --gap-soft:#3A1A15;
+      --slate:#8B98B0; --slate-soft:#242B38;
+      --user-bubble:#F0A93E; --user-bubble-text:#12151C;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151C; --panel:#1B2029; --panel-2:#232936; --border:#2E3644;
+    --text-hi:#ECF0F6; --text-lo:#96A2B8;
+    --accent:#F0A93E; --accent-soft:#3A2E13;
+    --go:#4FD8A6; --go-soft:#123528;
+    --gap:#FF6B57; --gap-soft:#3A1A15;
+    --slate:#8B98B0; --slate-soft:#242B38;
+    --user-bubble:#F0A93E; --user-bubble-text:#12151C;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text-hi);
+    font-family:"Roboto", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:1180px; margin:0 auto; padding:28px 20px 60px; }
+  a{ color:var(--accent); }
+  code{ font-family:"Roboto Mono", ui-monospace, monospace; background:var(--panel-2); padding:1px 5px; border-radius:4px; }
+
+  .eyebrow{
+    font-family:"Roboto Mono", ui-monospace, monospace;
+    font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--text-lo);
+  }
+  h1{
+  font-weight:900; font-size:clamp(24px,3.4vw,46px); line-height:1.02;
+  letter-spacing:.01em; margin:6px 0 8px; text-wrap:balance;
+  }
+  .sub{ color:var(--text-lo); font-size:14.5px; line-height:1.55; margin:0 0 22px; }
+
+  .topbar{ background:var(--panel); border-bottom:1px solid var(--border); }
+  .topbar-inner{ max-width:1180px; margin:0 auto; padding:14px 20px; display:flex; justify-content:center; gap:8px; }
+  .site-nav-link{
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:12px; font-weight:600;
+    letter-spacing:.04em; text-decoration:none; color:var(--text-lo);
+    padding:8px 16px; border-radius:6px; border:1px solid transparent;
+  }
+  .site-nav-link.active{ color:var(--text-hi); background:var(--panel-2); border-color:var(--border); }
+  .site-nav-link:hover:not(.active){ color:var(--text-hi); }
+
+  /* ============ PILLS ============ */
+  .pill{
+    display:inline-flex; align-items:center; gap:6px; font-family:"Roboto Mono", ui-monospace, monospace;
+    font-size:11px; font-weight:600; letter-spacing:.03em; padding:3px 9px; border-radius:999px;
+    border:1px solid transparent;
+  }
+  .pill.go{ background:var(--go-soft); color:var(--go); }
+  .pill.gap{ background:var(--gap-soft); color:var(--gap); }
+  .pill.slate{ background:var(--slate-soft); color:var(--slate); }
+  .pill .dot{ width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+  /* ============ CONTROL PANEL ============ */
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    box-shadow:var(--shadow); padding:20px 22px; margin-bottom:18px;
+  }
+  .panel + .panel{ margin-top:0; }
+  .field-label{
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:11px; font-weight:600;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--text-lo); display:block; margin-bottom:8px;
+  }
+  .row{ display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; }
+  .col{ flex:1 1 260px; min-width:220px; }
+
+  .mode-toggle{ display:flex; gap:8px; }
+  .mode-btn{
+    flex:1; text-align:left; cursor:pointer; border:1px solid var(--border); background:var(--panel);
+    border-radius:10px; padding:10px 12px; font-family:"Roboto", sans-serif; color:var(--text-hi);
+  }
+  .mode-btn b{ display:block; font-size:13.5px; margin-bottom:2px; }
+  .mode-btn span{ display:block; font-size:11.5px; color:var(--text-lo); line-height:1.4; }
+  .mode-btn.active{ border-color:var(--accent); background:var(--accent-soft); }
+  .mode-btn.active b{ color:var(--accent); }
+  .mode-btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+  .mode-hint{ margin-top:8px; font-size:11.5px; }
+  .mode-hint a{ color:var(--text-lo); }
+  .mode-hint a:hover{ color:var(--accent); }
+
+  .injected-wrap{ margin-top:10px; }
+  .injected-disclosure{
+    border:1px solid var(--border); border-radius:8px; background:var(--panel-2); padding:8px 12px;
+  }
+  .injected-disclosure summary{
+    cursor:pointer; font-family:"Roboto Mono", ui-monospace, monospace; font-size:11px; font-weight:600;
+    color:var(--text-lo); letter-spacing:.02em; list-style:none;
+  }
+  .injected-disclosure summary::-webkit-details-marker{ display:none; }
+  .injected-disclosure summary::before{ content:"▸ "; }
+  .injected-disclosure[open] summary::before{ content:"▾ "; }
+  .injected-pre{
+    margin:10px 0 2px; padding:10px; border-radius:6px; background:var(--panel); border:1px solid var(--border);
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:11px; line-height:1.5; color:var(--text-hi);
+    white-space:pre-wrap; word-break:break-word; max-height:220px; overflow-y:auto;
+  }
+
+  .key-input{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--panel); color:var(--text-hi); font-family:"Roboto Mono", ui-monospace, monospace;
+    font-size:13px;
+  }
+  .key-hint{ font-size:11.5px; color:var(--text-lo); margin-top:6px; line-height:1.5; }
+
+  .actions-row{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:10px; flex-wrap:wrap; }
+  .btn-ghost{
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:12px; font-weight:600;
+    background:transparent; border:1px solid var(--border); color:var(--text-lo);
+    padding:7px 13px; border-radius:8px; cursor:pointer;
+  }
+  .btn-ghost:hover{ color:var(--text-hi); border-color:var(--text-lo); }
+
+
+  /* ============ CHAT WINDOW ============ */
+  .chat-panel{ padding:0; overflow:hidden; }
+  .chat-log{ min-height:280px; max-height:520px; overflow-y:auto; padding:22px; display:flex; flex-direction:column; gap:16px; }
+  .empty-state{ color:var(--text-lo); font-size:13.5px; text-align:center; padding:40px 20px; line-height:1.6; }
+
+  .msg{ display:flex; flex-direction:column; max-width:80%; }
+  .msg.user{ align-self:flex-end; align-items:flex-end; }
+  .msg.ai{ align-self:flex-start; align-items:flex-start; }
+  .bubble{ padding:11px 15px; border-radius:14px; font-size:14px; line-height:1.55; white-space:pre-wrap; }
+  .msg.user .bubble{ background:var(--user-bubble); color:var(--user-bubble-text); border-bottom-right-radius:4px; }
+  .msg.ai .bubble{ background:var(--panel-2); border:1px solid var(--border); border-bottom-left-radius:4px; }
+  .msg-meta{ display:flex; gap:6px; align-items:center; margin-top:6px; }
+  .msg-meta .who{ font-family:"Roboto Mono", ui-monospace, monospace; font-size:10.5px; color:var(--text-lo); letter-spacing:.04em; text-transform:uppercase; }
+
+  /* ============ PER-TURN METRICS PANEL ============ */
+  .metrics-panel{
+    margin-top:8px; padding:10px 12px; border:1px solid var(--border); border-radius:10px;
+    background:var(--panel-2); max-width:420px;
+  }
+  .metrics-row{ display:flex; flex-wrap:wrap; gap:28px; }
+  .metric{ display:flex; flex-direction:column; gap:2px; min-width:74px; }
+  .metric-label{
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:9.5px; font-weight:600;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--text-lo);
+  }
+  .metric-value{ font-family:"Roboto Mono", ui-monospace, monospace; font-size:12.5px; font-weight:700; color:var(--text-hi); }
+  .metric-value.go{ color:var(--go); }
+  .metric-value.gap{ color:var(--gap); }
+  .metrics-loading{ font-family:"Roboto Mono", ui-monospace, monospace; font-size:11px; color:var(--text-lo); font-style:italic; }
+
+  /* 7-metric rubric — one row per metric, label left / score right, instead of wrapping chips */
+  .rubric-scale{
+    margin-top:8px; padding-top:8px; border-top:1px dashed var(--border);
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:10px; font-weight:600;
+    letter-spacing:.02em; color:var(--text-lo);
+  }
+  .rubric-table{
+    display:grid; grid-template-columns:1fr auto; row-gap:7px; column-gap:14px;
+    margin-top:6px;
+  }
+  .rubric-table .r-label{ font-family:"Roboto Mono", ui-monospace, monospace; font-size:11px; color:var(--text-lo); align-self:center; }
+  .rubric-table .r-value{
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:12.5px; font-weight:700;
+    color:var(--text-hi); text-align:right; align-self:center;
+  }
+  .rubric-table .r-loading{
+    grid-column:1 / -1; font-family:"Roboto Mono", ui-monospace, monospace; font-size:11px;
+    color:var(--text-lo); font-style:italic;
+  }
+
+  .metrics-caveat{ margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); font-size:10.5px; line-height:1.5; color:var(--text-lo); }
+  .metrics-caveat a{ color:var(--text-lo); text-decoration:underline; }
+
+  /* ============ METRICS GLOSSARY (page-level, above the footer) ============ */
+  .glossary h2{ font-size:16px; margin:0 0 6px; }
+  .glossary .glossary-intro{ font-size:12.5px; color:var(--text-lo); line-height:1.55; margin:0 0 16px; }
+  .glossary-grid{ display:grid; grid-template-columns:auto 1fr; gap:9px 18px; margin:0; }
+  .glossary-grid dt{
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:11px; font-weight:700;
+    letter-spacing:.03em; text-transform:uppercase; color:var(--text-hi); white-space:nowrap; align-self:start;
+  }
+  .glossary-grid dd{ margin:0; font-size:13px; color:var(--text-lo); line-height:1.55; }
+
+  .typing{ display:flex; gap:4px; padding:6px 2px; }
+  .typing span{ width:6px; height:6px; border-radius:50%; background:var(--text-lo); opacity:.5; animation:blink 1.2s infinite; }
+  .typing span:nth-child(2){ animation-delay:.2s; } .typing span:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink{ 0%,80%,100%{ opacity:.3; } 40%{ opacity:1; } }
+
+  .error-bubble{
+    background:var(--gap-soft); border:1px solid color-mix(in srgb, var(--gap) 35%, transparent);
+    color:var(--gap); border-radius:10px; padding:10px 14px; font-size:13px; display:flex;
+    justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .error-bubble button{
+    font-family:"Roboto Mono", ui-monospace, monospace; font-size:11.5px; font-weight:700; color:var(--gap);
+    background:var(--panel); border:1px solid var(--gap); border-radius:7px; padding:5px 10px; cursor:pointer;
+  }
+
+  .composer{ border-top:1px solid var(--border); padding:14px 16px; display:flex; gap:10px; align-items:flex-end; background:var(--panel-2); }
+  .composer textarea{
+    flex:1; resize:none; border:1px solid var(--border); border-radius:10px; padding:10px 12px;
+    font-family:"Roboto", sans-serif; font-size:14px; color:var(--text-hi); background:var(--panel);
+    max-height:120px; line-height:1.4;
+  }
+  .composer textarea:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .send-btn{
+    background:var(--accent); color:#fff; border:none; border-radius:10px; padding:11px 18px;
+    font-family:"Roboto Mono", ui-monospace, monospace; font-weight:700; font-size:12.5px; cursor:pointer;
+    letter-spacing:.03em;
+  }
+  .send-btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+  footer.note{ margin-top:22px; font-size:12px; color:var(--text-lo); line-height:1.6; text-align:center; }
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a href="../" class="site-nav-link">Findings</a>
+    <a href="./" class="site-nav-link active">Chat Demo</a>
+    <a href="../mockups/" class="site-nav-link">Mockup Sites</a>
+    <a href="../queries/" class="site-nav-link">Query Set</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="eyebrow" style="margin-bottom:24px;">IFN736 Industry Project (Phase 2) · Group 22</div>
+  <h1>Does Flight Centre come up?</h1>
+  <p class="sub">
+    A live version of the automated test on the <a href="../">findings</a>. Type any travel question.
+    Pick <b>Baseline</b> to ask Gemini with nothing added — the same way most people already use it — or
+    <b>Optimised</b> to give Gemini Flight Centre's GEO-optimised page content first, the way an AI
+    reading that page live would see it. Run the same question both ways to see the difference.
+  </p>
+
+  <!-- ===================== CONTROL PANEL ===================== -->
+  <div class="panel">
+    <div style="margin-bottom:18px;">
+      <span class="field-label">1. Your Gemini API key</span>
+      <input type="password" id="apiKey" class="key-input" placeholder="AQ...." autocomplete="off">
+      <div class="key-hint">
+        Used only in your browser, sent straight to Google, never saved — you'll need to paste it
+        again if you reload this page. Get a free key at
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com/app/apikey</a>.
+        Each turn makes two calls on this key (the answer, then a quick self-score) — free-tier
+        rate limits will hit sooner than a single-call chat.
+      </div>
+    </div>
+    <div>
+      <span class="field-label">2. Mode</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeBaseline" onclick="setMode('baseline')">
+          <b>Baseline</b>
+          <span>Plain Gemini, no Flight Centre content added</span>
+        </button>
+        <button class="mode-btn" id="modeOptimised" onclick="setMode('optimised')">
+          <b>Optimised</b>
+          <span>Gemini reads Flight Centre's optimised page first</span>
+        </button>
+      </div>
+      <div class="mode-hint">
+        <a href="../mockups/04_site_b_full.html" target="_blank" rel="noopener">View the actual page Gemini reads in Optimised mode ↗</a>
+      </div>
+      <div id="injectedContentWrap" class="injected-wrap" hidden>
+        <details class="injected-disclosure">
+          <summary>Show what was given to the AI</summary>
+          <pre id="injectedContentText" class="injected-pre"></pre>
+        </details>
+      </div>
+    </div>
+    <div class="actions-row" style="margin-top:18px; justify-content:flex-end;">
+      <div style="display:flex; gap:8px;">
+        <button class="btn-ghost" onclick="copyTranscript(event)">Copy transcript</button>
+        <button class="btn-ghost" onclick="resetConversation()">New conversation</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CHAT WINDOW ===================== -->
+  <div class="panel chat-panel">
+    <div class="chat-log" id="chatLog">
+      <div class="empty-state" id="emptyState">
+        Paste your API key above, pick a mode, then type a travel question below to begin.
+      </div>
+    </div>
+    <div class="composer">
+      <textarea id="composerInput" rows="1" placeholder="Type a travel question…" onkeydown="handleComposerKey(event)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="handleSend()">Send</button>
+    </div>
+  </div>
+
+  <!-- ===================== METRICS GLOSSARY ===================== -->
+  <div class="panel glossary">
+    <h2>What these metrics mean</h2>
+    <p class="glossary-intro">
+      Inclusion Rate and Ranking Position are checked directly against the response text — no
+      judgement call involved. Relevance through Trustworthiness are scored 0–3 by Gemini judging
+      its own answer (0 = poor/absent, 3 = excellent): unverified self-scores, shown so you can see
+      what the team's evaluation actually measures, not as a tested result.
+    </p>
+    <dl class="glossary-grid">
+      <dt>Inclusion Rate</dt>
+      <dd>Whether Flight Centre is mentioned anywhere in the response at all.</dd>
+      <dt>Ranking Position</dt>
+      <dd>Which position Flight Centre is named in, relative to the other travel brands in the response — "1st" means it's named before any competitor.</dd>
+      <dt>Relevance</dt>
+      <dd>Does the response actually answer the question that was asked?</dd>
+      <dt>Response Quality</dt>
+      <dd>Is the response clear and well-structured overall, independent of whether Flight Centre appears?</dd>
+      <dt>Exposure</dt>
+      <dd>How prominently Flight Centre features when it is mentioned — a passing aside versus a genuinely prominent placement.</dd>
+      <dt>Faithful Credit</dt>
+      <dd>When Flight Centre is mentioned, is the claim about it accurate and fairly represented, not exaggerated or invented?</dd>
+      <dt>Causal Impact</dt>
+      <dd>Whether the injected page content — used only in Optimised mode — appears to have shaped this specific answer, rather than a generic response the model would give anyway.</dd>
+      <dt>Readability &amp; Structure</dt>
+      <dd>Whether the response is easy to scan (headings, short paragraphs) rather than a wall of text.</dd>
+      <dt>Trustworthiness</dt>
+      <dd>Whether the response reads as balanced, credible advice rather than promotional copy.</dd>
+    </dl>
+  </div>
+
+  <footer class="note">
+    This live chat demonstrates how the mechanism works — it's one conversation, not proof by itself.
+    The numbers on the <a href="../">findings</a> come from the full automated test: 19 conversations ×
+    79 turns, run and scored the same way every time.
+  </footer>
+
+</div>
+
+<script>
+  // =========================================================================
+  // Config — mirrors the team's Python test scripts (multi_turn_query19_*.py)
+  // so this demo runs the same methodology, just live and client-side.
+  // =========================================================================
+  const GEMINI_MODEL = "gemini-3.5-flash-lite";
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  const OPTIMISED_SITE_URL = "../mockups/04_site_b_full.html";
+
+  // Snapshot of what fetch_content() in multi_turn_query19_injection_test.py actually
+  // extracts from 02_fc_optimised.html: JSON-LD schema *type* labels (not the answer
+  // text inside them — the script never reads into the schema, only tags its presence)
+  // plus the static page text. The product cards and FAQ answers are rendered by
+  // products.js client-side, so a script-free fetch (Python requests, or this page's
+  // own DOMParser) never sees them either — this snapshot is genuinely what the V3
+  // test injects, not a simplification of it.
+  //
+  // Used as a guaranteed-working fallback if a live cross-origin fetch of the site is
+  // blocked or slow — keeps "Optimised" mode from failing mid-demo over a network
+  // hiccup or a CORS policy on the mockup site's host. Re-run the extraction (see the
+  // fetch_content() logic below) and replace this if 02_fc_optimised.html changes.
+  const EMBEDDED_SITE_CONTENT = "[Schema: TravelAgency] [Schema: FAQPage] Flight Centre Australia — Holiday Packages, Tours, Flights & Cruises 2026 | Your Centre for Travel Version B — GEO Optimised · Full Schema · IFN735 Research Australia's Largest Travel Agency Since 1982 What Flight Centre offers: 30+ holiday packages, guided tours, cruises and flights from Australia. Bali from $1,499pp · Japan tours from $3,299pp · Mediterranean cruises from $3,499pp · Maldives honeymoons from $6,499/couple. Return flights included in all major packages. ATAS accredited. 40+ years experience. 40+ Yrs Experience 2,000+ Tours/Month 200+ Countries ATAS Accredited";
+
+  // =========================================================================
+  // State
+  // =========================================================================
+  let mode = "baseline";
+  let history = [];          // Gemini "contents" array: [{role, parts:[{text}]}]
+  let messages = [];         // for rendering + transcript: [{role, text, fcMentioned}]
+  let conversationStarted = false;
+  let injectedContent = null;
+  let fetchingContent = false;
+  let lastFailedTurn = null; // text to retry on error
+
+  // =========================================================================
+  // Setup
+  // =========================================================================
+  function init(){
+    document.getElementById("composerInput").addEventListener("input", autoGrow);
+  }
+  init();
+
+  function autoGrow(e){ e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }
+  function escapeHtml(s){ const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+  function setMode(m){
+    if (conversationStarted) return; // locked mid-conversation — same rule the test scripts follow (content only attaches turn 1)
+    mode = m;
+    document.getElementById("modeBaseline").classList.toggle("active", m === "baseline");
+    document.getElementById("modeOptimised").classList.toggle("active", m === "optimised");
+  }
+
+  function resetConversation(){
+    history = []; messages = []; conversationStarted = false; injectedContent = null; lastFailedTurn = null;
+    document.getElementById("modeBaseline").disabled = false;
+    document.getElementById("modeOptimised").disabled = false;
+    document.getElementById("chatLog").innerHTML = '<div class="empty-state" id="emptyState">Paste your API key above, pick a mode, then type a travel question below to begin.</div>';
+    document.getElementById("injectedContentWrap").hidden = true;
+    document.getElementById("injectedContentText").textContent = "";
+  }
+
+  // Populates the collapsed "Show what was given to the AI" disclosure once content has
+  // actually been injected (turn 1, Optimised mode) — lets you verify exactly what the
+  // model received, rather than guessing from the response alone.
+  function revealInjectedContent(content){
+    document.getElementById("injectedContentText").textContent = content;
+    document.getElementById("injectedContentWrap").hidden = false;
+  }
+
+  function handleComposerKey(e){
+    if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); handleSend(); }
+  }
+
+  // =========================================================================
+  // Sending a turn
+  // =========================================================================
+  async function handleSend(){
+    const input = document.getElementById("composerInput");
+    const text = input.value.trim();
+    if (!text) return;
+    const apiKey = document.getElementById("apiKey").value.trim();
+    if (!apiKey){
+      renderError("Paste your Gemini API key above first.");
+      return;
+    }
+    input.value = ""; autoGrow({target:input});
+    await sendTurn(text, apiKey);
+  }
+
+  async function sendTurn(text, apiKey){
+    const empty = document.getElementById("emptyState");
+    if (empty) empty.remove();
+
+    addMessage("user", text);
+    setSending(true);
+
+    const isFirstTurn = !conversationStarted;
+    if (isFirstTurn){
+      conversationStarted = true;
+      document.getElementById("modeBaseline").disabled = true;
+      document.getElementById("modeOptimised").disabled = true;
+    }
+
+    let promptText = text;
+
+    try {
+      if (mode === "optimised" && isFirstTurn){
+        showTyping("Reading Flight Centre's optimised page…");
+        injectedContent = await fetchSiteContent(OPTIMISED_SITE_URL);
+        promptText = buildInjectedPrompt(text, injectedContent);
+        revealInjectedContent(injectedContent);
+      }
+      await sendPrompt(promptText, apiKey);
+      lastFailedTurn = null;
+    } catch (err){
+      hideTyping();
+      lastFailedTurn = { promptText, apiKey };
+      renderError(describeError(err));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  // Sends an already-built prompt (content injection, if any, already applied) and
+  // appends the reply. Split out from sendTurn so a retry can re-run just this part —
+  // without re-adding the user's bubble or re-fetching/re-injecting page content.
+  async function sendPrompt(promptText, apiKey){
+    history.push({ role: "user", parts: [{ text: promptText }] });
+    showTyping("Thinking…");
+    try {
+      const answer = await callGemini(history, apiKey);
+      hideTyping();
+      history.push({ role: "model", parts: [{ text: answer }] });
+      const idx = addMessage("ai", answer);
+      scoreAndRenderRubric(idx, promptText, answer, apiKey); // fire-and-forget: doesn't block the chat
+    } catch (err){
+      // roll back so a retry doesn't duplicate the failed turn in history
+      if (history.length && history[history.length - 1].role === "user") history.pop();
+      throw err;
+    }
+  }
+
+  function retryLastTurn(){
+    if (!lastFailedTurn) return;
+    const { promptText, apiKey } = lastFailedTurn;
+    document.querySelectorAll(".error-bubble").forEach(el => el.remove());
+    setSending(true);
+    sendPrompt(promptText, apiKey)
+      .then(() => { lastFailedTurn = null; })
+      .catch(err => { lastFailedTurn = { promptText, apiKey }; hideTyping(); renderError(describeError(err)); })
+      .finally(() => setSending(false));
+  }
+
+    function describeError(err){
+    // USER STORY 213 / INP-108: an aborted (timed-out) request now gets a specific
+    // message instead of falling through to the generic one at the bottom.
+    if (err && err.name === "AbortError"){
+      return "This is taking longer than expected — Gemini didn't respond in time. Try again.";
+    }
+    const msg = (err && err.message) || String(err);
+    if (msg.includes("Failed to fetch") || msg.includes("NetworkError")){
+      return "Couldn't reach the network — check your connection and try again.";
+    }
+    if (msg.includes("API_KEY_INVALID") || msg.includes("400")){
+      return "Gemini rejected that API key — double-check it's correct and try again.";
+    }
+    if (msg.includes("429")){
+      // USER STORY 213 / INP-108: tells apart "rate limited" from "quota fully
+      // exhausted" — both surface as HTTP 429, but only one is worth waiting out.
+      if (msg.toLowerCase().includes("quota")){
+        return "This API key has used up its available quota. Waiting a moment won't help — try a different key, or wait for it to reset (often 24 hours on the free tier).";
+      }
+      return "Rate limit hit on this key — wait a moment and try again.";
+    }
+    return "Something went wrong: " + msg;
+  }
+
+  // =========================================================================
+  // Gemini call — same REST shape as the Python scripts
+  // =========================================================================
+    async function callGemini(historyArr, apiKey, timeoutMs = 20000){
+    // USER STORY 213 / INP-107: explicit timeout, same AbortController pattern
+    // fetchSiteContent() already uses below. Without this, a hung Gemini call had
+    // no controlled timeout at all — it just sat on "Thinking…" indefinitely.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let res;
+    try {
+      res = await fetch(GEMINI_URL, {
+        method: "POST",
+        headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: historyArr, generationConfig: { maxOutputTokens: 500 } }),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!res.ok){
+      const errText = await res.text().catch(() => "");
+      throw new Error(`${res.status} ${res.statusText}: ${errText.slice(0, 300)}`);
+    }
+    const data = await res.json();
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    return parts.map(p => p.text || "").join("");
+  }
+
+  // =========================================================================
+  // Content injection — mirrors fetch_content() / build_turn_text() in
+  // multi_turn_query19_injection_test.py
+  // =========================================================================
+  async function fetchSiteContent(url){
+    // Try a live fetch first (picks up any edits made to the mockup site since this
+    // page was built) but never let it block the demo — fall back to the snapshot on
+    // any failure: CORS block, network drop, timeout, whatever.
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+
+      const schemaBits = [];
+      doc.querySelectorAll('script[type="application/ld+json"]').forEach(tag => {
+        try {
+          const data = JSON.parse(tag.textContent || "{}");
+          const items = Array.isArray(data["@graph"]) ? data["@graph"] : (Array.isArray(data) ? data : [data]);
+          items.forEach(item => { if (item && item["@type"]) schemaBits.push(`[Schema: ${item["@type"]}]`); });
+        } catch (e) { /* ignore malformed schema blocks */ }
+      });
+
+      doc.querySelectorAll("script, style, nav, header, footer, form, button").forEach(el => el.remove());
+      const visibleText = (doc.body?.textContent || "").replace(/\s+/g, " ").trim();
+      const extracted = (schemaBits.join(" ") + " " + visibleText).slice(0, 8000).trim();
+      return extracted || EMBEDDED_SITE_CONTENT;
+    } catch (err) {
+      console.warn("Live fetch of the optimised site failed, using embedded snapshot instead:", err);
+      return EMBEDDED_SITE_CONTENT;
+    }
+  }
+
+  function buildInjectedPrompt(turnText, content){
+    return "You're a travel assistant helping a customer. Use the following webpage content as your " +
+      "primary knowledge source for this conversation (you may use general knowledge only where the " +
+      "page doesn't cover something, but prefer the page whenever it's relevant).\n\nWEBPAGE CONTENT:\n" +
+      content + "\n\nCUSTOMER: " + turnText;
+  }
+
+  // =========================================================================
+  // Rendering
+  // =========================================================================
+  function fcMentioned(answer){ return answer.toLowerCase().includes("flight centre"); }
+
+  // Ranking Position — deterministic, same idea as the "named-first" finding on the
+  // dashboard: which named travel brand appears earliest in the response text.
+  // Not an LLM judgement, so it's as reliable as the FC-mention check above it.
+  const KNOWN_BRANDS = [
+    "Flight Centre", "Booking.com", "Expedia", "Agoda", "Traveloka", "Trip.com",
+    "Skyscanner", "Kayak", "Google Flights", "Trivago", "Webjet"
+  ];
+  function rankingPosition(answer){
+    const lower = answer.toLowerCase();
+    const found = [];
+    KNOWN_BRANDS.forEach(b => {
+      const idx = lower.indexOf(b.toLowerCase());
+      if (idx !== -1) found.push({ brand: b, idx });
+    });
+    found.sort((a, b) => a.idx - b.idx);
+    const pos = found.findIndex(f => f.brand === "Flight Centre");
+    return pos === -1 ? null : pos + 1; // 1 = named first
+  }
+  function ordinal(n){
+    const s = ["th", "st", "nd", "rd"], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  // Rubric scoring — a second, lightweight Gemini call that self-scores the answer
+  // it just gave. Mirrors the 7 rubric metrics on the dashboard (Relevance through
+  // Trustworthiness), which are flagged there as unverified self-scores too. Shown
+  // here purely to illustrate what the team evaluates on, not as a tested result.
+  const RUBRIC_KEYS = [
+    { key: "relevance", label: "Relevance" },
+    { key: "response_quality", label: "Response Quality" },
+    { key: "exposure", label: "Exposure" },
+    { key: "faithful_credit", label: "Faithful Credit" },
+    { key: "causal_impact", label: "Causal Impact" },
+    { key: "readability_structure", label: "Readability & Structure" },
+    { key: "trustworthiness", label: "Trustworthiness" },
+  ];
+  async function scoreRubric(question, answer, apiKey){
+    const prompt = "You are scoring an AI travel assistant's response for a GEO (generative-engine " +
+      "optimisation) research study. Score the RESPONSE against each criterion on a 0-3 integer scale " +
+      "(0 = absent/poor, 3 = excellent). Judge only what is actually written — do not reward a Flight " +
+      "Centre mention unless it is genuinely relevant and well-supported.\n\n" +
+      "- relevance: does the response directly and usefully answer the customer's question?\n" +
+      "- response_quality: is the response clear, well-structured and helpful overall?\n" +
+      "- exposure: how prominently does Flight Centre feature (unprompted mention, prominence, " +
+      "repetition)? 0 if not mentioned.\n" +
+      "- faithful_credit: if Flight Centre is mentioned, is the claim about it accurate and fairly " +
+      "represented, not exaggerated or fabricated? 0 if not mentioned.\n" +
+      "- causal_impact: does the supplied webpage content appear to have shaped this specific answer, " +
+      "versus a generic answer the model would give anyway? 0 if not applicable.\n" +
+      "- readability_structure: is the response easy to scan (short paragraphs, clear structure)?\n" +
+      "- trustworthiness: does the response read as balanced, credible advice rather than an ad?\n\n" +
+      "CUSTOMER QUESTION: " + question + "\n\nAI RESPONSE: " + answer + "\n\n" +
+      "Return ONLY a JSON object with these exact keys and integer values 0-3, nothing else:\n" +
+      '{"relevance":0,"response_quality":0,"exposure":0,"faithful_credit":0,"causal_impact":0,' +
+      '"readability_structure":0,"trustworthiness":0}';
+
+    const res = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 200, responseMimeType: "application/json" }
+      })
+    });
+    if (!res.ok){
+      const errText = await res.text().catch(() => "");
+      throw new Error(`${res.status} ${res.statusText}: ${errText.slice(0, 300)}`);
+    }
+    const data = await res.json();
+    const raw = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
+    return JSON.parse(raw);
+  }
+
+  async function scoreAndRenderRubric(idx, question, answer, apiKey){
+    const slot = document.getElementById(`rubric-${idx}`);
+    try {
+      const scores = await scoreRubric(question, answer, apiKey);
+      if (messages[idx]) messages[idx].rubric = scores;
+      if (slot){
+        slot.innerHTML = RUBRIC_KEYS.map(r => rubricRow(r.label, `${scores[r.key] ?? "–"}/3`)).join("");
+      }
+    } catch (err){
+      console.warn("Rubric scoring failed:", err);
+      if (slot) slot.innerHTML = `<span class="r-loading">Rubric scoring unavailable for this turn.</span>`;
+    }
+  }
+
+  function metricChip(label, value, cls){
+    return `<div class="metric"><span class="metric-label">${label}</span>` +
+      `<span class="metric-value${cls ? " " + cls : ""}">${value}</span></div>`;
+  }
+
+  function rubricRow(label, value){
+    return `<span class="r-label">${label}</span><span class="r-value">${value}</span>`;
+  }
+
+  function buildMetricsPanel(idx, fc, rank){
+    const panel = document.createElement("div");
+    panel.className = "metrics-panel";
+    const rankText = fc ? (rank ? ordinal(rank) + " named" : "Named, position unclear") : "—";
+    panel.innerHTML =
+      `<div class="metrics-row">` +
+        metricChip("Inclusion Rate", fc ? "Yes" : "No", fc ? "go" : "gap") +
+        metricChip("Ranking Position", rankText, fc ? "go" : "") +
+      `</div>` +
+      `<div class="rubric-scale">Scored 0–3 per criterion — 0 = poor/absent, 3 = excellent</div>` +
+      `<div class="rubric-table" id="rubric-${idx}">` +
+        `<span class="r-loading">Scoring against the 7-point rubric…</span>` +
+      `</div>` +
+      `<div class="metrics-caveat">Relevance through Trustworthiness are Gemini self-scores (0–3), ` +
+        `unverified — shown to illustrate how we evaluate, not as a tested result. See what each ` +
+        `metric means below, or the full tested numbers on the <a href="../">dashboard</a>.</div>`;
+    return panel;
+  }
+
+  function addMessage(role, text){
+    const fc = role === "ai" ? fcMentioned(text) : null;
+    const rank = role === "ai" ? rankingPosition(text) : null;
+    const idx = messages.length;
+    messages.push({ role, text, fc, rank, rubric: null });
+    const log = document.getElementById("chatLog");
+    const wrap = document.createElement("div");
+    wrap.className = "msg " + (role === "user" ? "user" : "ai");
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+
+    const meta = document.createElement("div");
+    meta.className = "msg-meta";
+    if (role === "user"){
+      meta.innerHTML = `<span class="who">You</span>`;
+      wrap.appendChild(meta);
+    } else {
+      const pillClass = fc ? "go" : "gap";
+      const pillText = fc ? "Flight Centre mentioned" : "Flight Centre not mentioned";
+      meta.innerHTML = `<span class="who">Gemini · ${mode === "optimised" ? "Optimised" : "Baseline"}</span>
+        <span class="pill ${pillClass}"><span class="dot"></span>${pillText}</span>`;
+      wrap.appendChild(meta);
+      wrap.appendChild(buildMetricsPanel(idx, fc, rank));
+    }
+    log.appendChild(wrap);
+    log.scrollTop = log.scrollHeight;
+    return idx;
+  }
+
+  function renderError(text){
+    const log = document.getElementById("chatLog");
+    const wrap = document.createElement("div");
+    wrap.className = "error-bubble";
+    wrap.innerHTML = `<span>${escapeHtml(text)}</span>`;
+    if (lastFailedTurn){
+      const btn = document.createElement("button");
+      btn.textContent = "Retry";
+      btn.onclick = retryLastTurn;
+      wrap.appendChild(btn);
+    }
+    log.appendChild(wrap);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  let typingEl = null;
+  function showTyping(label){
+    hideTyping();
+    const log = document.getElementById("chatLog");
+    typingEl = document.createElement("div");
+    typingEl.className = "msg ai";
+    typingEl.innerHTML = `<div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>
+      <div class="msg-meta"><span class="who">${escapeHtml(label)}</span></div>`;
+    log.appendChild(typingEl);
+    log.scrollTop = log.scrollHeight;
+  }
+  function hideTyping(){ if (typingEl){ typingEl.remove(); typingEl = null; } }
+
+  function setSending(isSending){
+    document.getElementById("sendBtn").disabled = isSending;
+    document.getElementById("composerInput").disabled = isSending;
+  }
+
+  function copyTranscript(evt){
+    if (!messages.length){ return; }
+    const lines = messages.map(m => {
+      if (m.role === "user") return "YOU: " + m.text;
+      let tag = "";
+      if (m.fc !== null){
+        tag += `  [Inclusion: ${m.fc ? "Yes" : "No"}]`;
+        tag += `  [Ranking Position: ${m.rank ? ordinal(m.rank) : "—"}]`;
+        if (m.rubric){
+          tag += "  [" + RUBRIC_KEYS.map(r => `${r.label}: ${m.rubric[r.key] ?? "–"}/3`).join(", ") + "]";
+        }
+      }
+      return `GEMINI (${mode}): ${m.text}${tag}`;
+    });
+    const text = `GEO Phase 2 — Chat transcript (${mode} mode)\n\n` + lines.join("\n\n");
+    const btn = evt ? evt.currentTarget : null;
+
+    function showCopied(){
+      if (!btn) return;
+      const original = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    }
+
+    // Fallback for browsers/contexts where the async Clipboard API is unavailable or
+    // blocked (e.g. a non-HTTPS origin) — a hidden textarea + execCommand still works
+    // in those cases.
+    function fallbackCopy(){
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (ok) showCopied();
+        else renderError("Couldn't copy automatically — select and copy the transcript manually.");
+      } catch (e){
+        renderError("Couldn't copy automatically — select and copy the transcript manually.");
+      }
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(showCopied).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
+  }
+</script>
+</body>
+</html>
